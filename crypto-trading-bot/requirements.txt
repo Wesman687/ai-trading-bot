@@ -1,0 +1,16 @@
+pandas
+numpy
+xgboost
+ccxt
+websockets
+python-dotenv
+datasets
+scikit-learn
+matplotlib
+shap
+dotenv
+pandas_ta
+praw
+seaborn
+
+#pip install git+https://github.com/JustAnotherArchivist/snscrape.git

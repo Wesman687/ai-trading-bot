@@ -1,0 +1,21 @@
+{
+    "token": "BTC",
+    "timestamp": "2025-03-26 20:15:00",
+    "model_prediction": {
+      "direction": "up",
+      "confidence": 0.87
+    },
+    "sentiment_score": 0.63,
+    "whale_activity": {
+      "buy_pressure": true,
+      "net_volume": 4200.75
+    },
+    "open_position": {
+      "status": true,
+      "entry_price": 86000.25,
+      "current_price": 86630.15,
+      "entry_time": "2025-03-26 18:05:00"
+    },
+    "notes": "BTC forming a wedge; breakout above resistance @ 86500"
+  }
+  

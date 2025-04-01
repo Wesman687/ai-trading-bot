@@ -1,0 +1,19 @@
+crypto-trading-bot/
+├── main.py                  # Entry point
+├── config.py                # Token symbols, thresholds, and API keys
+├── data/
+│   ├── ws_client.py         # WebSocket client (e.g., Binance)
+│   ├── historical_fetcher.py # Fetch month/week/day/hour OHLCV
+│   └── indicators.py        # Calculate RSI, MACD, Bollinger, etc.
+├── features/
+│   └── feature_aggregator.py # Weight features based on timeframes
+├── model/
+│   ├── predictor.py         # XGBoost model interface
+│   └── train.py             # For offline training with historical data
+├── trading/
+│   ├── strategy.py          # Threshold rules + signal confirmation
+│   └── trade_executor.py    # Dry-run or live trade calls
+├── utils/
+│   └── logger.py            # Logging & alerts
+├── requirements.txt
+└── README.md

@@ -1,0 +1,10 @@
+python main.py
+
+streamlit run dashboard.py
+
+python data/historical_downloader.py
+
+
+python -m model.train --csv data/logs/BTCUSDT_ohlcv.csv --token BTC
+python -m model.train --csv data/logs/SOLUSDT_ohlcv.csv --token SOL
+python -m model.train --csv data/logs/XRPUSDT_ohlcv.csv --token XRP

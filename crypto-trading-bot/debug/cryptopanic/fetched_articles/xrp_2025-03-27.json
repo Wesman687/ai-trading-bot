@@ -1,0 +1,428 @@
+[
+  {
+    "kind": "news",
+    "domain": "cryptodaily.co.uk",
+    "source": {
+      "title": "CryptoDaily",
+      "region": "en",
+      "domain": "cryptodaily.co.uk",
+      "path": null,
+      "type": "feed"
+    },
+    "title": "Crypto Price Analysis 3-25: BITCOIN: BTC, ETHEREUM: ETH, SOLANA: SOL, RIPPLE: XRP, ALGORAND: ALGO, BITTENSOR: TAO, FILECOIN: FIL",
+    "published_at": "2025-03-25T13:38:45Z",
+    "slug": "Crypto-Price-Analysis-3-25-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-ALGORAND-ALGO-BITTENSOR-TAO-FILECOIN-FIL",
+    "currencies": [
+      {
+        "code": "BTC",
+        "title": "Bitcoin",
+        "slug": "bitcoin",
+        "url": "https://cryptopanic.com/news/bitcoin/"
+      },
+      {
+        "code": "ETH",
+        "title": "Ethereum",
+        "slug": "ethereum",
+        "url": "https://cryptopanic.com/news/ethereum/"
+      },
+      {
+        "code": "XRP",
+        "title": "XRP",
+        "slug": "ripple",
+        "url": "https://cryptopanic.com/news/ripple/"
+      },
+      {
+        "code": "SOL",
+        "title": "Solana",
+        "slug": "solana",
+        "url": "https://cryptopanic.com/news/solana/"
+      },
+      {
+        "code": "TAO",
+        "title": "Bittensor",
+        "slug": "bittensor",
+        "url": "https://cryptopanic.com/news/bittensor/"
+      },
+      {
+        "code": "FIL",
+        "title": "Filecoin",
+        "slug": "filecoin",
+        "url": "https://cryptopanic.com/news/filecoin/"
+      },
+      {
+        "code": "ALGO",
+        "title": "Algorand",
+        "slug": "algorand",
+        "url": "https://cryptopanic.com/news/algorand/"
+      },
+      {
+        "code": "BITCOIN",
+        "title": "HarryPotterObamaSonic10Inu (ETH)",
+        "slug": "harrypotterobamasonic10in",
+        "url": "https://cryptopanic.com/news/harrypotterobamasonic10in/"
+      }
+    ],
+    "id": 20871794,
+    "url": "https://cryptopanic.com/news/20871794/Crypto-Price-Analysis-3-25-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-ALGORAND-ALGO-BITTENSOR-TAO-FILECOIN-FIL?mtm_campaign=API-OFA",
+    "created_at": "2025-03-25T13:38:45Z",
+    "votes": {
+      "negative": 0,
+      "positive": 0,
+      "important": 0,
+      "liked": 0,
+      "disliked": 0,
+      "lol": 0,
+      "toxic": 0,
+      "saved": 0,
+      "comments": 0
+    }
+  },
+  {
+    "kind": "news",
+    "domain": "cryptodaily.co.uk",
+    "source": {
+      "title": "CryptoDaily",
+      "region": "en",
+      "domain": "cryptodaily.co.uk",
+      "path": null,
+      "type": "feed"
+    },
+    "title": "Crypto Price Analysis 3-21: BITCOIN: BTC, ETHEREUM: ETH, SOLANA: SOL, RIPPLE: XRP, LITECOIN: LTC, AAVE: AAVE, JUPITER: JUP",
+    "published_at": "2025-03-21T13:58:15Z",
+    "slug": "Crypto-Price-Analysis-3-21-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-LITECOIN-LTC-AAVE-AAVE-JUPITER-JUP",
+    "currencies": [
+      {
+        "code": "BTC",
+        "title": "Bitcoin",
+        "slug": "bitcoin",
+        "url": "https://cryptopanic.com/news/bitcoin/"
+      },
+      {
+        "code": "ETH",
+        "title": "Ethereum",
+        "slug": "ethereum",
+        "url": "https://cryptopanic.com/news/ethereum/"
+      },
+      {
+        "code": "XRP",
+        "title": "XRP",
+        "slug": "ripple",
+        "url": "https://cryptopanic.com/news/ripple/"
+      },
+      {
+        "code": "SOL",
+        "title": "Solana",
+        "slug": "solana",
+        "url": "https://cryptopanic.com/news/solana/"
+      },
+      {
+        "code": "LTC",
+        "title": "Litecoin",
+        "slug": "litecoin",
+        "url": "https://cryptopanic.com/news/litecoin/"
+      },
+      {
+        "code": "AAVE",
+        "title": "Aave",
+        "slug": "aave",
+        "url": "https://cryptopanic.com/news/aave/"
+      },
+      {
+        "code": "JUP",
+        "title": "Jupiter",
+        "slug": "jupiter-exchange-solana",
+        "url": "https://cryptopanic.com/news/jupiter-exchange-solana/"
+      },
+      {
+        "code": "BITCOIN",
+        "title": "HarryPotterObamaSonic10Inu (ETH)",
+        "slug": "harrypotterobamasonic10in",
+        "url": "https://cryptopanic.com/news/harrypotterobamasonic10in/"
+      }
+    ],
+    "id": 20856995,
+    "url": "https://cryptopanic.com/news/20856995/Crypto-Price-Analysis-3-21-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-LITECOIN-LTC-AAVE-AAVE-JUPITER-JUP?mtm_campaign=API-OFA",
+    "created_at": "2025-03-21T13:58:15Z",
+    "votes": {
+      "negative": 0,
+      "positive": 0,
+      "important": 0,
+      "liked": 0,
+      "disliked": 0,
+      "lol": 0,
+      "toxic": 0,
+      "saved": 0,
+      "comments": 0
+    }
+  },
+  {
+    "kind": "news",
+    "domain": "cryptodaily.co.uk",
+    "source": {
+      "title": "CryptoDaily",
+      "region": "en",
+      "domain": "cryptodaily.co.uk",
+      "path": null,
+      "type": "feed"
+    },
+    "title": "Crypto Price Analysis 3-19: BITCOIN: BTC, ETHEREUM: ETH, SOLANA: SOL,  RIPPLE: XRP, ONDO FINANCE: ONDO, FILECOIN: FIL, COSMOS: ATOM",
+    "published_at": "2025-03-19T13:39:56Z",
+    "slug": "Crypto-Price-Analysis-3-19-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-ONDO-FINANCE-ONDO-FILECOIN-FIL-COSMOS-ATOM",
+    "currencies": [
+      {
+        "code": "BTC",
+        "title": "Bitcoin",
+        "slug": "bitcoin",
+        "url": "https://cryptopanic.com/news/bitcoin/"
+      },
+      {
+        "code": "ETH",
+        "title": "Ethereum",
+        "slug": "ethereum",
+        "url": "https://cryptopanic.com/news/ethereum/"
+      },
+      {
+        "code": "XRP",
+        "title": "XRP",
+        "slug": "ripple",
+        "url": "https://cryptopanic.com/news/ripple/"
+      },
+      {
+        "code": "SOL",
+        "title": "Solana",
+        "slug": "solana",
+        "url": "https://cryptopanic.com/news/solana/"
+      },
+      {
+        "code": "ONDO",
+        "title": "Ondo",
+        "slug": "ondo-finance",
+        "url": "https://cryptopanic.com/news/ondo-finance/"
+      },
+      {
+        "code": "ATOM",
+        "title": "Cosmos Hub",
+        "slug": "cosmos",
+        "url": "https://cryptopanic.com/news/cosmos/"
+      },
+      {
+        "code": "FIL",
+        "title": "Filecoin",
+        "slug": "filecoin",
+        "url": "https://cryptopanic.com/news/filecoin/"
+      },
+      {
+        "code": "ETH",
+        "title": "Bridged Ether (StarkGate)",
+        "slug": "bridged-wrapped-ether-starkgate",
+        "url": "https://cryptopanic.com/news/bridged-wrapped-ether-starkgate/"
+      },
+      {
+        "code": "SOL",
+        "title": "Binance-Peg SOL",
+        "slug": "binance-peg-sol",
+        "url": "https://cryptopanic.com/news/binance-peg-sol/"
+      },
+      {
+        "code": "BITCOIN",
+        "title": "HarryPotterObamaSonic10Inu (ETH)",
+        "slug": "harrypotterobamasonic10in",
+        "url": "https://cryptopanic.com/news/harrypotterobamasonic10in/"
+      },
+      {
+        "code": "BTC",
+        "title": "Osmosis allBTC",
+        "slug": "osmosis-allbtc",
+        "url": "https://cryptopanic.com/news/osmosis-allbtc/"
+      }
+    ],
+    "id": 20846555,
+    "url": "https://cryptopanic.com/news/20846555/Crypto-Price-Analysis-3-19-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-ONDO-FINANCE-ONDO-FILECOIN-FIL-COSMOS-ATOM?mtm_campaign=API-OFA",
+    "created_at": "2025-03-19T13:39:56Z",
+    "votes": {
+      "negative": 0,
+      "positive": 0,
+      "important": 0,
+      "liked": 0,
+      "disliked": 0,
+      "lol": 0,
+      "toxic": 0,
+      "saved": 0,
+      "comments": 0
+    }
+  },
+  {
+    "kind": "news",
+    "domain": "cryptodaily.co.uk",
+    "source": {
+      "title": "CryptoDaily",
+      "region": "en",
+      "domain": "cryptodaily.co.uk",
+      "path": null,
+      "type": "feed"
+    },
+    "title": "Crypto Price Analysis 3-14: BITCOIN: BTC, ETHEREUM: ETH, SOLANA: SOL, RIPPLE: XRP, JUPITER: JUP",
+    "published_at": "2025-03-14T09:01:47Z",
+    "slug": "Crypto-Price-Analysis-3-14-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-JUPITER-JUP",
+    "currencies": [
+      {
+        "code": "XRP",
+        "title": "XRP",
+        "slug": "ripple",
+        "url": "https://cryptopanic.com/news/ripple/"
+      },
+      {
+        "code": "JUP",
+        "title": "Jupiter",
+        "slug": "jupiter-exchange-solana",
+        "url": "https://cryptopanic.com/news/jupiter-exchange-solana/"
+      },
+      {
+        "code": "ETH",
+        "title": "Bridged Ether (StarkGate)",
+        "slug": "bridged-wrapped-ether-starkgate",
+        "url": "https://cryptopanic.com/news/bridged-wrapped-ether-starkgate/"
+      },
+      {
+        "code": "SOL",
+        "title": "Binance-Peg SOL",
+        "slug": "binance-peg-sol",
+        "url": "https://cryptopanic.com/news/binance-peg-sol/"
+      },
+      {
+        "code": "BITCOIN",
+        "title": "HarryPotterObamaSonic10Inu (ETH)",
+        "slug": "harrypotterobamasonic10in",
+        "url": "https://cryptopanic.com/news/harrypotterobamasonic10in/"
+      },
+      {
+        "code": "BTC",
+        "title": "Osmosis allBTC",
+        "slug": "osmosis-allbtc",
+        "url": "https://cryptopanic.com/news/osmosis-allbtc/"
+      }
+    ],
+    "id": 20825257,
+    "url": "https://cryptopanic.com/news/20825257/Crypto-Price-Analysis-3-14-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-RIPPLE-XRP-JUPITER-JUP?mtm_campaign=API-OFA",
+    "created_at": "2025-03-14T09:01:47Z",
+    "votes": {
+      "negative": 0,
+      "positive": 0,
+      "important": 0,
+      "liked": 0,
+      "disliked": 0,
+      "lol": 0,
+      "toxic": 0,
+      "saved": 0,
+      "comments": 0
+    }
+  },
+  {
+    "kind": "news",
+    "domain": "cryptodaily.co.uk",
+    "source": {
+      "title": "CryptoDaily",
+      "region": "en",
+      "domain": "cryptodaily.co.uk",
+      "path": null,
+      "type": "feed"
+    },
+    "title": "Crypto Price Analysis 3-4: BITCOIN: BTC, ETHEREUM: ETH, SOLANA: SOL, DOGECOIN: DOGE, RIPPLE: XRP, FILECOIN: FIL, INJECTIVE: INJ",
+    "published_at": "2025-03-04T14:05:42Z",
+    "slug": "Crypto-Price-Analysis-3-4-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-DOGECOIN-DOGE-RIPPLE-XRP-FILECOIN-FIL-INJECTIVE-INJ",
+    "currencies": [
+      {
+        "code": "BTC",
+        "title": "Bitcoin",
+        "slug": "bitcoin",
+        "url": "https://cryptopanic.com/news/bitcoin/"
+      },
+      {
+        "code": "ETH",
+        "title": "Ethereum",
+        "slug": "ethereum",
+        "url": "https://cryptopanic.com/news/ethereum/"
+      },
+      {
+        "code": "XRP",
+        "title": "XRP",
+        "slug": "ripple",
+        "url": "https://cryptopanic.com/news/ripple/"
+      },
+      {
+        "code": "SOL",
+        "title": "Solana",
+        "slug": "solana",
+        "url": "https://cryptopanic.com/news/solana/"
+      },
+      {
+        "code": "DOGE",
+        "title": "Dogecoin",
+        "slug": "dogecoin",
+        "url": "https://cryptopanic.com/news/dogecoin/"
+      },
+      {
+        "code": "FIL",
+        "title": "Filecoin",
+        "slug": "filecoin",
+        "url": "https://cryptopanic.com/news/filecoin/"
+      },
+      {
+        "code": "INJ",
+        "title": "Injective",
+        "slug": "injective-protocol",
+        "url": "https://cryptopanic.com/news/injective-protocol/"
+      },
+      {
+        "code": "DOGE",
+        "title": "Binance-Peg Dogecoin",
+        "slug": "binance-peg-dogecoin",
+        "url": "https://cryptopanic.com/news/binance-peg-dogecoin/"
+      },
+      {
+        "code": "ETH",
+        "title": "Bridged Ether (StarkGate)",
+        "slug": "bridged-wrapped-ether-starkgate",
+        "url": "https://cryptopanic.com/news/bridged-wrapped-ether-starkgate/"
+      },
+      {
+        "code": "SOL",
+        "title": "Binance-Peg SOL",
+        "slug": "binance-peg-sol",
+        "url": "https://cryptopanic.com/news/binance-peg-sol/"
+      },
+      {
+        "code": "BITCOIN",
+        "title": "HarryPotterObamaSonic10Inu (ETH)",
+        "slug": "harrypotterobamasonic10in",
+        "url": "https://cryptopanic.com/news/harrypotterobamasonic10in/"
+      },
+      {
+        "code": "DOGE",
+        "title": "Department Of Government Efficiency",
+        "slug": "department-of-government-efficiency",
+        "url": "https://cryptopanic.com/news/department-of-government-efficiency/"
+      },
+      {
+        "code": "BTC",
+        "title": "Osmosis allBTC",
+        "slug": "osmosis-allbtc",
+        "url": "https://cryptopanic.com/news/osmosis-allbtc/"
+      }
+    ],
+    "id": 20779040,
+    "url": "https://cryptopanic.com/news/20779040/Crypto-Price-Analysis-3-4-BITCOIN-BTC-ETHEREUM-ETH-SOLANA-SOL-DOGECOIN-DOGE-RIPPLE-XRP-FILECOIN-FIL-INJECTIVE-INJ?mtm_campaign=API-OFA",
+    "created_at": "2025-03-04T14:05:42Z",
+    "votes": {
+      "negative": 0,
+      "positive": 0,
+      "important": 0,
+      "liked": 0,
+      "disliked": 0,
+      "lol": 0,
+      "toxic": 0,
+      "saved": 0,
+      "comments": 0
+    }
+  }
+]
