@@ -17,6 +17,7 @@ def update_trailing_logic(position, row, stop_pct=0.01):
             return True  # trigger exit
     return False
 
+
 def apply_confidence_decay(position, row, decay_threshold=0.2, min_hold_minutes=3, alpha=0.8):
     current_conf = row.get("confidence", 1.0)
     prev_smooth = position.get("smoothed_confidence", current_conf)
@@ -63,3 +64,48 @@ def shape_reward_with_duration(position, current_row, base_reward):
         print(f"[WARN] Reward shaping failed: {e}")
     
     return base_reward  # fallback
+
+def evaluate_rl_bot(token, latest_feature, RL_MODELS):
+    rl_info = RL_MODELS.get(token)
+    if not rl_info:
+        return None  # no model for this token
+
+    env = rl_info["env"]
+    model = rl_info["model"]
+
+    try:
+        # Prepare state from live features
+        state = env.step_with_live_features(latest_feature)
+
+        # Predict action
+        action, _ = model.predict(state, deterministic=False)
+
+        # Execute action in the environment
+        _, reward, _, _, _ = env.step(action)
+
+        return {
+            "action": int(action),
+            "reward": float(reward)
+        }
+
+    except Exception as e:
+        print(f"[RL ERROR] Failed to evaluate {token}: {e}")
+        return None
+    
+def small_positional_bonus(position, row):
+    entry = position["entry_price"]
+    direction = position["direction"]
+    current = row.get("close", 0)
+
+    # Simple unrealized profit check
+    if direction == "long":
+        return (current - entry) * 0.01  # scale bonus
+    elif direction == "short":
+        return (entry - current) * 0.01
+    return 0
+
+def log_rl_step(logger, token, index, action, price, reward, confidence, reason):
+    logger.info(
+        f"[STEP] {token} | Index: {index} | Action: {action} | Price: {price:.2f} | "
+        f"Reward: {reward:.3f} | Confidence: {confidence:.3f} | Reason: {reason}"
+    )

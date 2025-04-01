@@ -15,4 +15,5 @@ def add_live_momentum_features(history):
         "candle_spread": df["high"].iloc[-1] - df["low"].iloc[-1],
         "candle_body": abs(df["close"].iloc[-1] - df["open"].iloc[-1]),
         "volume_surge": df["volume"].iloc[-1] / (df["volume"].mean() + 1e-6),
+        
     }

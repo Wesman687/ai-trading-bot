@@ -57,7 +57,7 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
     HORIZONS = ["1m", "15m", "1h", "1d"]
     strategy = STRATEGY_CONFIG.get(token.upper(), {})
     CONF_THRESHOLDS = strategy.get("confidence_thresholds", {
-        "1m": 0.85, "15m": 0.8, "1h": 0.75, "1d": 0.7
+        "1m": 0.75, "15m": 0.7, "1h": 0.7, "1d": 0.65
     })
     override_threshold = strategy.get("confidence_override_threshold", 0.95)
 
@@ -66,7 +66,6 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
     low_confidences = []
     high_confidences = []
     base_filter_failures = []
-
     stacking_valid = True
 
     for horizon in HORIZONS:
@@ -97,16 +96,13 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
                 stacking_valid = False
                 continue
 
-            if confidence >= threshold or confidence >= override_threshold:
+            if confidence >= threshold:
                 if direction == "up" and features.get("macd_cross") == 1:
                     if validate_macd_long(features):
                         valid = True
                 elif direction == "down":
                     if validate_short_setup(features):
                         valid = True
-                elif confidence >= override_threshold:
-                    print(f"[{horizon}] ⚠️ Overriding filters due to high confidence: {confidence:.2f}")
-                    valid = True
 
             if valid:
                 stacked_signals.append((horizon, direction, confidence))
@@ -114,34 +110,13 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
             else:
                 stacking_valid = False
 
-    # Always show confidence summary
-    if low_confidences:
-        low_str = " | ".join(f"{h}:{c:.2f}" for h, c in low_confidences)
-        print(f"❌ {token} {direction}  Low Confidences → {low_str}")
-
-    if high_confidences:
-        high_str = " | ".join(f"{h}:{c:.2f}" for h, c in high_confidences)
-        print(f"✅{token} {direction} High Confidences → {high_str}")
+    if check_singals_print_prediction_to_terminal(token, low_confidences, high_confidences, stacked_signals, base_filter_failures, direction):
+        return False
 
     if not stacked_signals:
-        if base_filter_failures:
-            print("❌ Base filter issues (truncated):")
-            for horizon, fails in base_filter_failures[:2]:
-                print(f"  - {horizon}: {', '.join(fails)}")
-            if len(base_filter_failures) > 2:
-                print(f"  ...and {len(base_filter_failures) - 2} more")
-        return None
+        return False
 
-    if not stacked_signals:
-        if base_filter_failures:
-            print("❌ Base filter issues (truncated):")
-            for horizon, fails in base_filter_failures[:2]:
-                print(f"  - {horizon}: {', '.join(fails)}")
-            if len(base_filter_failures) > 2:
-                print(f"  ...and {len(base_filter_failures) - 2} more")
-        return None
-
-    # Now it's safe to use stacked_signals[-1]
+    # Use latest stacked signal
     best_signal = stacked_signals[-1]
     horizon, direction, confidence = best_signal
     features = feature_sets_by_horizon[horizon]
@@ -169,7 +144,26 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
         "features": features,
         "multiplier": multiplier,
         "price": price
-    }
+    }, True
+    
+def check_singals_print_prediction_to_terminal( token, low_confidences, high_confidences, stacked_signals, base_filter_failures, direction):
+    if low_confidences:
+        low_str = " | ".join(f"{h}:{c:.2f}" for h, c in low_confidences)
+        print(f"❌ {token} {direction}  Low Confidences → {low_str}")
+
+    if high_confidences:
+        high_str = " | ".join(f"{h}:{c:.2f}" for h, c in high_confidences)
+        print(f"✅{token} {direction} High Confidences → {high_str}")
+
+    if not stacked_signals:
+        if base_filter_failures:
+            print("❌ Base filter issues (truncated):")
+            for horizon, fails in base_filter_failures[:2]:
+                print(f"  - {horizon}: {', '.join(fails)}")
+            if len(base_filter_failures) > 2:
+                print(f"  ...and {len(base_filter_failures) - 2} more")
+        return True
+    return False
 
 def doji_threshold_for(horizon):
     return {
@@ -200,56 +194,32 @@ def base_filters(features, horizon="1m"):
         return False, failures
     return True, []
 
-def validate_macd_long(features, debug=False):
-    """
-    Validates if MACD long setup is strong enough.
-    Conditions:
-    - RSI above 50 and rising
-    - Strong volume
-    - MACD histogram positive (momentum building)
-    - MACD direction rising
-    """
-    failures = []
 
-    # RSI strength
-    if features.get("rsi", 0) <= 50 or features.get("rsi_direction_3", 0) <= 0.66:
-        failures.append("weak RSI direction")
-
-    # Volume strength
-    if features.get("volume_surge", 0) <= 1.2 and features.get("volume_vs_median", 0) <= 1.2:
-        failures.append("weak volume")
-
-    # MACD momentum
-    if features.get("macd_histogram", 0) <= 0:
-        failures.append("bearish MACD histogram")
-
-    # MACD direction (should be rising)
-    if features.get("macd_direction_3", 0) <= 0:
-        failures.append("MACD direction not rising")
-
-    if failures:
-        if debug:
-            print("[Filter] Skipping MACD long setup due to:", "; ".join(failures))
+def validate_macd_long(features):
+    # Softer version of MACD long validation
+    if features.get("rsi") is not None and features.get("rsi") < 48:
         return False
-
+    if features.get("macd_histogram", -1) < -0.01:
+        return False
+    if features.get("macd_direction_3", -1) < 0:
+        return False
+    if features.get("volume_surge", 0) < 0.5:
+        return False
     return True
 
-def validate_short_setup(features):
-    failures = []
-    if features.get("rsi_cross_50", 1) == 1:
-        failures.append("RSI above 50")
-    if features.get("macd_histogram", 0) >= 0:
-        failures.append("MACD histogram not bearish")
-    if features.get("ema_20", 0) >= features.get("ema_20_prev", 1e9):
-        failures.append("EMA20 not dropping")
-    if features.get("sma_20", 0) >= features.get("sma_20_prev", 1e9):
-        failures.append("SMA20 not dropping")
-    if features.get("momentum_5", 0) >= -0.0025:
-        failures.append("momentum too weak")
-    if features.get("bearish_count_5", 0) < 3:
-        failures.append("bearish count too low")
 
-    if failures:
-        print("[Filter] Skipping short setup due to:", "; ".join(failures))
+def validate_short_setup(features):
+    # Softer version of short filter
+    if features.get("rsi") is not None and features.get("rsi") > 55:
+        return False
+    if features.get("macd_histogram", 0) > 0.01:
+        return False
+    if features.get("ema_20", 0) >= features.get("ema_20_prev", 0) + 0.1:
+        return False
+    if features.get("sma_20", 0) >= features.get("sma_20_prev", 0) + 0.1:
+        return False
+    if features.get("momentum_5", 0) > -0.0005:
+        return False
+    if features.get("bearish_count_5", 0) < 2:
         return False
     return True

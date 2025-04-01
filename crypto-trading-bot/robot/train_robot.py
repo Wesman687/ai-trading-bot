@@ -22,6 +22,7 @@ def train_rl_agent(token="BTC", model_save_root="models/ppo_trading_agent"):
     print(f"📈 Starting RL training for {token}...")
     model.learn(total_timesteps=100_000)
 
+
     token_model_path = os.path.join(model_save_root, token)
     os.makedirs(token_model_path, exist_ok=True)
     model_filename = f"ppo_trading_{token}"

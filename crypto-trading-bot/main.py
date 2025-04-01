@@ -18,9 +18,8 @@ import json
 from model.predictor import load_feature_names_for_token
 from stable_baselines3 import PPO
 from robot.trading_env import TradingEnv  # or wherever it's located
-
+from robot.helper_function import evaluate_rl_bot
 RL_MODELS = {}  # Store models per token
-
 
 
 async def retrain_daily():
@@ -48,6 +47,7 @@ async def retrain_daily():
                                     outfile.write(lines[0])  # write header once
                                     header_written = True
                                 outfile.writelines(lines[1:])  # skip header after first
+                    
 
                 # ✅ Step 3: Run training
                 cmd = f"python model/train_local.py --csv {csv_out} --token {token}"
@@ -100,7 +100,7 @@ async def main():
 
         try:
             env = TradingEnv(token)
-            model = PPO.load(model_path, env=env)
+            model = PPO.load(model_path, env=env, device="cpu") 
             RL_MODELS[token] = {
                 "env": env,
                 "model": model
@@ -136,23 +136,9 @@ async def main():
             f.write(json.dumps(latest_data, default=str) + "\n")
         
         # RL agent (per token)
-        rl_info = RL_MODELS.get(token)
-        if rl_info:
-            env = rl_info["env"]
-            model = rl_info["model"]
-
-            try:
-                # Prepare state from live features
-                state = env.step_with_live_features(latest_feature)
-
-                # Predict action externally
-                action, _ = model.predict(state, deterministic=True)
-
-                # Execute step using the predicted action
-                _, reward, _, _ = env.step(action)
-
-            except Exception as e:
-                print(f"[RL ERROR] Failed to evaluate {token}: {e}")
+        result = evaluate_rl_bot(token, latest_feature, RL_MODELS)
+        if result:
+            print(f"[RL] {token} | Action: {result['action']} | Reward: {result['reward']:.4f}")
                 
         current_prices[pair] = latest_data["close"]
         predictions = {}
@@ -192,7 +178,7 @@ async def main():
                         f.write(f"{key:<30}: ❌ Error printing value ({e})\n")
 
 
-        decision = evaluate_multi_signal(predictions, token, features_by_horizon, latest_data["close"])
+        decision, PassedSignal = evaluate_multi_signal(predictions, token, features_by_horizon, latest_data["close"])
 
         if decision:
             direction = decision["direction"]
@@ -220,9 +206,10 @@ async def main():
         current_prices[pair] = latest_data["close"]
         log_live_account_status(current_prices)
         log_live_snapshot(pair=pair, price=latest_data["close"])
-        update_trade_outcomes(current_prices, predictions, pair)
+        update_trade_outcomes(current_prices, pair, PassedSignal)
         export_account_snapshot()
         export_open_trades()
+        
     
     print("Starting WebSocket listeners...")
     await start_ws_listener([s.lower().replace("/", "") for s in WATCHED_PAIRS], on_price_update)

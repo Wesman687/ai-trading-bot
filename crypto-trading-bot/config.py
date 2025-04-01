@@ -86,30 +86,30 @@ MIN_TREND = {
 STRATEGY_CONFIG = {
     "BTC": {
         "confidence_thresholds": {
-            "1m": 0.8,
-            "15m": 0.75,
-            "1h": 0.70,
-            "1d": 0.67
+            "1m": 0.75,
+            "15m": 0.7,
+            "1h": 0.68,
+            "1d": 0.65
         },
-        "confidence_override_threshold": 0.85
+        "confidence_override_threshold": 0.9
     },
     "XRP": {
         "confidence_thresholds": {
-            "1m": 0.95,
-            "15m": 0.91,
-            "1h": 0.85,
-            "1d": 0.80
+            "1m": 0.78,
+            "15m": 0.74,
+            "1h": 0.7,
+            "1d": 0.66
         },
-        "confidence_override_threshold": 0.95
+        "confidence_override_threshold": 0.9
     },
     "SOL": {
         "confidence_thresholds": {
-            "1m": 0.87,
-            "15m": 0.85,
-            "1h": 0.80,
-            "1d": 0.74
+            "1m": 0.77,
+            "15m": 0.73,
+            "1h": 0.7,
+            "1d": 0.66
         },
-        "confidence_override_threshold": 0.90
+        "confidence_override_threshold": 0.9
     }
 }
 

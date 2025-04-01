@@ -22,6 +22,7 @@ def execute_trade(pair: str, decision: dict):
     price = decision.get("price") or features.get("close")
     timestamp = datetime.now(timezone.utc).isoformat()
     multiplier = decision.get("multiplier", 1.0)
+    
 
     log_entry = {
         "timestamp": timestamp,

@@ -8,9 +8,8 @@ from collections import deque
 
 from matplotlib import pyplot as plt
 import pandas as pd
-from config import STRATEGY_CONFIG, TRADE_CONFIG
-from utils.logger import LOG_DIR, log, make_json_safe
-from config import  HORIZON_WINDOWS
+from config import  TRADE_CONFIG
+from utils.logger import LOG_DIR,  make_json_safe
 
 # Simulated wallet state
 paper_trades = deque()
@@ -38,6 +37,7 @@ def has_momentum_reversal(entry, current_price, direction):
     if direction == "up" and current_price < entry * (1 - reverse_threshold):
         return True
     if direction == "down" and current_price > entry * (1 + reverse_threshold):
+        
         return True
     return False
 
@@ -93,19 +93,22 @@ def simulate_trade(pair, direction, confidence, price, features=None, duration_m
     paper_trades.append(trade)
     return trade
 
-from datetime import datetime, timedelta, timezone
 
-def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
+
+def update_trade_outcomes(current_prices, pair, PassedSignal):
     now = datetime.now(timezone.utc)
-    if meets_confidence_thresholds(pair, predictions_by_horizon):
-        return
+
+    
     for trade in list(paper_trades):
+        
         if trade["evaluated"] or trade["pair"] != pair:
             continue
 
         current_price = current_prices.get(pair)
         if current_price is None:
             continue
+        
+        
 
         entry = trade["entry_price"]
         direction = trade["direction"]
@@ -120,39 +123,30 @@ def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
 
         entry_time = datetime.fromisoformat(trade["timestamp"])
         time_held = now - entry_time
-        minutes_since_entry = time_held.total_seconds() / 60
+        if PassedSignal:
+            print(f"⚠️ Trade {trade['id']} Start: {entry} Current:{current_price} Profit: {entry - current_price}")
+            return
 
-        # Wait at least 10 seconds before evaluating
-        if time_held.total_seconds() < 10:
-            continue
-
-        duration = trade.get("duration_minutes", 15)
-        remaining_time = duration - minutes_since_entry
-
-        # Filter prediction horizons based on time left
-        valid_horizons = [h for h in predictions_by_horizon if HORIZON_WINDOWS[h] <= remaining_time]
-        confidence = max(
-            (predictions_by_horizon[h].get("confidence", 0) for h in valid_horizons),
-            default=0
-        )        
-
+        # ❌ Check for early exit (e.g., stop loss, trailing stop, etc.)
         early_exit, reason = should_exit_trade(trade, current_price, time_held, sl_price, tp_price)
 
-        # Optional soft timeout cleanup logic (disabled by default)
-        if not early_exit and should_soft_timeout(trade, confidence, time_held):
-            early_exit, reason = True, "timeout_no_edge"
 
-        # Evaluate outcome
+        if not early_exit:
+            continue  # ❌ No reason to exit
+        
+        if reason in ("still_valid", None):
+            print(f"🔁 Holding {pair} open — confidence still high and no valid exit reason.")
+            continue  # don't close
+
+        # Otherwise: evaluate trade
         won = (
             (direction == "up" and current_price > entry) or
             (direction == "down" and current_price < entry)
         )
 
-        # Calculate PnL
         change = (current_price - entry) / entry
         pnl = trade_size * change * leverage
 
-        # Final record updates
         account["balance"] += pnl
         account["net_pnl"] += pnl
         account["win_count" if won else "loss_count"] += 1
@@ -167,7 +161,7 @@ def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
             "direction": direction,
             "won": won,
             "pnl": round(pnl, 2),
-            "reason": reason or "n/a",
+            "reason": reason or  "confidence_drop",
             "duration": trade.get("duration_minutes")
         }
 
@@ -185,7 +179,8 @@ def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
         export_account_snapshot()
         log_full_trade(trade_result, stage="closed")
 
-        print(f"📈 Trade {direction.upper()} | {pair} | Result: {'WIN' if won else 'LOSS'} | Reason: {reason} | PnL: ${pnl:.2f}")
+        print(f"📈 Trade {direction.upper()} | {pair} | Result: {'WIN' if won else 'LOSS'} | Reason: {trade_result['reason']} | PnL: ${pnl:.2f}")
+
         
 def should_soft_timeout(trade, confidence, time_held):
     if time_held < timedelta(minutes=trade["duration_minutes"] * 2):
@@ -200,16 +195,7 @@ def should_soft_timeout(trade, confidence, time_held):
         features.get("volume_surge", 1) < 0.8
     )
 
-def meets_confidence_thresholds(token, predictions_by_horizon):
-    strategy = STRATEGY_CONFIG.get(token.upper(), {})
-    thresholds = strategy.get("confidence_thresholds", {})
-    
-    for horizon, threshold in thresholds.items():
-        confidence = predictions_by_horizon.get(horizon, {}).get("confidence", 0)
-        if confidence >= threshold:
-            return True  # ✅ At least one signal meets threshold
 
-    return False  # ❌ None met threshold
 
 def should_exit_trade(trade, current_price, time_held, sl_price, tp_price):
     min_hold = timedelta(minutes=5)
@@ -227,7 +213,7 @@ def should_exit_trade(trade, current_price, time_held, sl_price, tp_price):
 
 
     if time_held < min_hold:
-        return False, None
+        return False, "still_valid"
 
     if price_drop_pct > 0.01:
         return True, "trailing_stop"
@@ -242,7 +228,7 @@ def should_exit_trade(trade, current_price, time_held, sl_price, tp_price):
     if rsi_reversal or (macd_hist < 0 and macd_dir < 0) or volume_surge < 0.8:
         return True, "momentum_decay"
 
-    return False, None
+    return False, "still_valid"
 
 def check_trailing_logic(trade, current_price, confidence, direction):
     """
@@ -414,7 +400,7 @@ def export_account_snapshot(path="logs/account_snapshot.json"):
             account["win_count"] / (account["win_count"] + account["loss_count"]), 4
         ) if (account["win_count"] + account["loss_count"]) > 0 else 0.0
     }
-
+    
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(snapshot, f, indent=2)
