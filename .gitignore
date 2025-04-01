@@ -28,3 +28,12 @@ crypto-trading-bot/data/*
 crypto-trading-bot/logs/*
 crypto-trading-bot/whale/data/*
 crypto-trading-bot/.env
+crypto-trading-bot/tensorboard_logs/*
+**/__pycache__*
+*/*.py[cod]
+*/*.pyo
+*/*.pyd
+*/*.egg-info
+*/*.egg
+*/*.whl
+*/*__pycache__*
