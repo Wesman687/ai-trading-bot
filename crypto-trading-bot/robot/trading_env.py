@@ -10,6 +10,7 @@ from gym import spaces
 from data.utils.feature_data import sanitize_vector
 import numpy as np
 from datetime import datetime, timedelta
+from .helper_function import update_trailing_logic, apply_confidence_decay, compute_extended_reward, shape_reward_with_duration
 
 FEATURE_DIR = Path("data/daily/features")
 WINDOW_SIZE = 20  # Number of timesteps for state
@@ -74,7 +75,8 @@ class TradingEnv(gym.Env):
             lines = [json.loads(line) for line in f if line.strip()]
         return lines
 
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
+        super().reset(seed=seed)
         self.data = self.load_data()
         self.index = WINDOW_SIZE
         self.balance = 1000.0
@@ -88,11 +90,11 @@ class TradingEnv(gym.Env):
         self.history = deque(maxlen=WINDOW_SIZE)
         for i in range(WINDOW_SIZE):
             vec = self.get_feature_vector(self.data[i])
-            if not np.all(np.isfinite(vec)):
-                vec = np.nan_to_num(vec, nan=0.0, posinf=0.0, neginf=0.0)
-            self.history.append(vec)
+            self.history.append(np.nan_to_num(vec, nan=0.0, posinf=0.0, neginf=0.0))
 
-        return self._get_state()
+        observation = self._get_state()
+        info = {}
+        return observation, info
     
     def _get_state(self):
         state = np.array(self.history).flatten()
@@ -117,11 +119,7 @@ class TradingEnv(gym.Env):
     def step(self, action):
         done = self.index >= len(self.data) - 1
         reward = 0
-        if self.use_confidence:
-            current_conf = row.get("confidence", 1.0)
-            entry_conf = self.position.get("entry_confidence", 1.0)
-            if current_conf < entry_conf * (1 - TRAILING_CONFIDENCE_DECAY):
-                action = 3  # Exit due to confidence decay
+        exit_reason = "manual_close"  # For extended logging (optional)
 
         if self.index < len(self.data):
             vec = self.get_feature_vector(self.data[self.index])
@@ -131,17 +129,9 @@ class TradingEnv(gym.Env):
         price = row.get("close", 0)
 
         # --- Update peak/bottom price if in position ---
-        if self.position:
-            if self.position["direction"] == "long":
-                self.position["peak_price"] = max(self.position.get("peak_price", price), price)
-                peak = self.position["peak_price"]
-                if price < peak * (1 - TRAILING_STOP_PCT):
-                    action = 3  # Force exit
-            elif self.position["direction"] == "short":
-                self.position["bottom_price"] = min(self.position.get("bottom_price", price), price)
-                bottom = self.position["bottom_price"]
-                if price > bottom * (1 + TRAILING_STOP_PCT):
-                    action = 3  # Force exit
+        if self.position and update_trailing_logic(self.position, row, stop_pct=TRAILING_STOP_PCT):
+            action = 3
+            exit_reason = "trailing_stop"
 
         # --- Actions ---
         if action == 1 and self.position is None:
@@ -151,41 +141,42 @@ class TradingEnv(gym.Env):
                 "peak_price": price,
                 "entry_confidence": row.get("confidence", 1.0),
                 "smoothed_confidence": row.get("confidence", 1.0),
-                "entry_time": row.get("timestamp") or datetime.now().isoformat()
+                "entry_time": row.get("timestamp") or datetime.now().isoformat(),
+                "duration_minutes": 5
             }
         elif action == 2 and self.position is None:
             self.position = {
                 "entry_price": price,
                 "direction": "short",
-                "bottom_price": price,
+                "peak_price": price,
                 "entry_confidence": row.get("confidence", 1.0),
                 "smoothed_confidence": row.get("confidence", 1.0),
-                "entry_time": row.get("timestamp") or datetime.now().isoformat()
+                "entry_time": row.get("timestamp") or datetime.now().isoformat(),
+                "duration_minutes": 5
             }
-            
-        if self.use_confidence and self.position:
-            current_conf = row.get("confidence", 1.0)
-            prev_smooth = self.position.get("smoothed_confidence", current_conf)
-            smoothed = (CONFIDENCE_SMOOTHING_ALPHA * prev_smooth) + ((1 - CONFIDENCE_SMOOTHING_ALPHA) * current_conf)
-            self.position["smoothed_confidence"] = smoothed
 
-            decay_trigger = self.position["entry_confidence"] * (1 - TRAILING_CONFIDENCE_DECAY)
+        if self.use_confidence and self.position and apply_confidence_decay(
+            self.position,
+            row,
+            decay_threshold=TRAILING_CONFIDENCE_DECAY,
+            min_hold_minutes=MIN_HOLD_MINUTES,
+            alpha=CONFIDENCE_SMOOTHING_ALPHA
+        ):
+            action = 3
+            exit_reason = "confidence_decay"
 
-            entry_time = datetime.fromisoformat(self.position["entry_time"])
-            now = datetime.fromisoformat(row.get("timestamp")) if "timestamp" in row else datetime.now()
-            hold_duration = (now - entry_time).total_seconds() / 60
-
-            # Only allow confidence-based exit after min hold
-            if hold_duration >= MIN_HOLD_MINUTES and smoothed < decay_trigger:
-                action = 3  # trigger early exit due to confidence decay
-        elif action == 3 and self.position is not None:
-            # Close position
+        if action == 3 and self.position is not None:
+            # --- Calculate reward before dropping position ---
             entry = self.position["entry_price"]
+            entry_conf = self.position.get("entry_confidence", 0)
+
             if self.position["direction"] == "long":
                 reward = price - entry
             else:
                 reward = entry - price
 
+            reward += compute_extended_reward(self.token, self.position, row, reward)
+            reward = shape_reward_with_duration(self.position, row, reward)
             self.balance += reward
             self.total_reward += reward
             self.trades_taken += 1
@@ -193,8 +184,11 @@ class TradingEnv(gym.Env):
                 self.wins += 1
             else:
                 self.losses += 1
+                self.drawdowns.append(abs(reward))
+
             self.logger.info(
-                f"[CLOSE] {self.token} | Action: {action} | Reward: {reward:.4f} | Balance: {self.balance:.2f}"
+                f"[CLOSE] {self.token} | Action: {action} | Reward: {reward:.4f} | Balance: {self.balance:.2f} | "
+                f"EntryConf: {entry_conf:.3f} | Reason: {exit_reason or 'manual'}"
             )
             self.position = None
 
@@ -202,14 +196,18 @@ class TradingEnv(gym.Env):
         if self.index < len(self.data):
             self.history.append(self.get_feature_vector(self.data[self.index]))
 
+        terminated = done  # natural end of episode
+        truncated = False  # or True if you implement a step/time limit manually
+
         if done:
             self.logger.info(
                 f"[CLOSE] {self.token} | Action: {action} | Reward: {reward:.4f} | Balance: {self.balance:.2f} | "
-                f"SmoothedConf: {smoothed:.3f} | EntryConf: {self.position.get('entry_confidence', 0):.3f}"
+                f"Reason: {exit_reason}"
             )
-            return self._get_state(), reward, done, {}
+            return self._get_state(), reward, terminated, truncated, {}
 
-        return self._get_state(), reward, done, {}
+        return self._get_state(), reward, False, False, {}
+
 
     
 

@@ -1,18 +1,21 @@
 import argparse
 from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.env_util import make_vec_env
 from .trading_env import TradingEnv  # adjust import to your project
 import os
+
+device = "cpu"
 
 
 def train_rl_agent(token="BTC", model_save_root="models/ppo_trading_agent"):
     token = token.upper()
-    env = DummyVecEnv([lambda: TradingEnv(token)])
-
+    env = make_vec_env(lambda: TradingEnv(token), n_envs=1)
+    metadata = {"render.modes": []}
     model = PPO(
         policy="MlpPolicy",
         env=env,
         verbose=1,
+        device=device,
         tensorboard_log=f"./tensorboard_logs/{token}"
     )
 

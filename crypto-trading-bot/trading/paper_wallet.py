@@ -8,7 +8,7 @@ from collections import deque
 
 from matplotlib import pyplot as plt
 import pandas as pd
-from config import TRADE_CONFIG
+from config import STRATEGY_CONFIG, TRADE_CONFIG
 from utils.logger import LOG_DIR, log, make_json_safe
 from config import  HORIZON_WINDOWS
 
@@ -97,7 +97,8 @@ from datetime import datetime, timedelta, timezone
 
 def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
     now = datetime.now(timezone.utc)
-
+    if meets_confidence_thresholds(pair, predictions_by_horizon):
+        return
     for trade in list(paper_trades):
         if trade["evaluated"] or trade["pair"] != pair:
             continue
@@ -135,14 +136,11 @@ def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
             default=0
         )        
 
-        early_exit, reason = should_exit_trade(trade, current_price, confidence, time_held, sl_price, tp_price)
+        early_exit, reason = should_exit_trade(trade, current_price, time_held, sl_price, tp_price)
 
         # Optional soft timeout cleanup logic (disabled by default)
-        if not early_exit and time_held >= timedelta(minutes=duration * 2) and confidence < 0.4:
-            early_exit, reason = True, "long_hold_low_confidence"
-
-        if not early_exit:
-            continue  # ⏳ Keep trade open if no exit reason yet
+        if not early_exit and should_soft_timeout(trade, confidence, time_held):
+            early_exit, reason = True, "timeout_no_edge"
 
         # Evaluate outcome
         won = (
@@ -188,11 +186,33 @@ def update_trade_outcomes(current_prices, predictions_by_horizon, pair):
         log_full_trade(trade_result, stage="closed")
 
         print(f"📈 Trade {direction.upper()} | {pair} | Result: {'WIN' if won else 'LOSS'} | Reason: {reason} | PnL: ${pnl:.2f}")
+        
+def should_soft_timeout(trade, confidence, time_held):
+    if time_held < timedelta(minutes=trade["duration_minutes"] * 2):
+        return False
 
-def should_exit_trade(trade, current_price, confidence, time_held, sl_price, tp_price):
+    features = trade.get("features", {})
+    return (
+        confidence < 0.4 and
+        not features.get("rsi_reversal", False) and
+        features.get("macd_histogram", 0) < 0 and
+        features.get("macd_direction_3", 0) < 0 and
+        features.get("volume_surge", 1) < 0.8
+    )
+
+def meets_confidence_thresholds(token, predictions_by_horizon):
+    strategy = STRATEGY_CONFIG.get(token.upper(), {})
+    thresholds = strategy.get("confidence_thresholds", {})
+    
+    for horizon, threshold in thresholds.items():
+        confidence = predictions_by_horizon.get(horizon, {}).get("confidence", 0)
+        if confidence >= threshold:
+            return True  # ✅ At least one signal meets threshold
+
+    return False  # ❌ None met threshold
+
+def should_exit_trade(trade, current_price, time_held, sl_price, tp_price):
     min_hold = timedelta(minutes=5)
-    optimal_exit = timedelta(minutes=trade["duration_minutes"] // 2)
-
     direction = trade["direction"]
     features = trade.get("features", {})
     rsi_reversal = features.get("rsi_reversal", False)
@@ -200,20 +220,17 @@ def should_exit_trade(trade, current_price, confidence, time_held, sl_price, tp_
     macd_dir = features.get("macd_direction_3", 0)
     volume_surge = features.get("volume_surge", 1)
 
-    trailing_conf = trade.get("peak_confidence", confidence)
     trailing_price = trade.get("peak_price", current_price)
 
     # Trailing stop logic
     price_drop_pct = (trailing_price - current_price) / trailing_price if direction == "up" else (current_price - trailing_price) / trailing_price
-    confidence_drop = trailing_conf - confidence
+
 
     if time_held < min_hold:
         return False, None
 
     if price_drop_pct > 0.01:
         return True, "trailing_stop"
-    if confidence_drop > 0.1 and time_held > optimal_exit:
-        return True, "confidence_decay"
     if direction == "up" and current_price <= sl_price:
         return True, "stop_loss"
     if direction == "up" and current_price >= tp_price:

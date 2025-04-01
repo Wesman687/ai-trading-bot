@@ -162,7 +162,8 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
 
     return {
         "direction": direction,
-        "confidence": confidence,
+        "confidences": predictions_by_horizon,
+        "confidence": predictions_by_horizon.get("15m", {}).get("confidence", 0),
         "horizon": horizon,
         "duration": duration_minutes,
         "features": features,
