@@ -86,6 +86,26 @@ def validate_features(expected_features, features):
 
     if missing_features:
         print(f"⚠️ Missing features: {missing_features}")
+        
+
+async def send_signal_to_trading_server(token, candle, features_by_horizon, predictions, rl_response=None):
+    signal_payload = {
+        "token": token,
+        "candle": candle,
+        "features": features_by_horizon,  # Send all timeframes
+        "predictions": predictions,
+        "rl_response": rl_response,
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post("http://localhost:5000/signal/update", json=signal_payload) as resp:
+                if resp.status != 200:
+                    print(f"❌ Failed to send signal: {await resp.text()}")
+                else:
+                    print(f"📤 Sent signal for {token} → Trading Server")
+    except Exception as e:
+        print(f"⚠️ Could not connect to trading server: {e}")
 
 async def main():
     print("Checking Historical Data and Downloading if needed...")
@@ -162,7 +182,7 @@ async def main():
 
             predictions[frame] = predict(model, features, feature_names, threshold)
             features_by_horizon[frame] = features
-
+            await send_signal_to_trading_server(token, latest_data, features, predictions, result)
             debug_path = f"logs/feature_debug_{pair}_{frame}.txt"
             with open(debug_path, "w", encoding="utf-8") as f:
                 f.write(f"🔎 Feature Snapshot for {pair} {frame} \n")

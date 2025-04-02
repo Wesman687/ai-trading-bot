@@ -37,3 +37,5 @@ crypto-trading-bot/tensorboard_logs/*
 */*.egg
 */*.whl
 */*__pycache__*
+Trader/*
+crypto-trading-bot/.venv310*

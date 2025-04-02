@@ -111,10 +111,10 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
                 stacking_valid = False
 
     if check_singals_print_prediction_to_terminal(token, low_confidences, high_confidences, stacked_signals, base_filter_failures, direction):
-        return False
+        return None, False
 
     if not stacked_signals:
-        return False
+        return None, False
 
     # Use latest stacked signal
     best_signal = stacked_signals[-1]
