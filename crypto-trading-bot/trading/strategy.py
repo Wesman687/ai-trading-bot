@@ -97,7 +97,7 @@ def evaluate_multi_signal(predictions_by_horizon, token, feature_sets_by_horizon
                 continue
 
             if confidence >= threshold:
-                if direction == "up" and features.get("macd_cross") == 1:
+                if direction == "up" or features.get("macd_cross") == 1:
                     if validate_macd_long(features):
                         valid = True
                 elif direction == "down":
