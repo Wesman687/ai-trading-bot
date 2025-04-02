@@ -1,6 +1,8 @@
 
 from pathlib import Path
+import threading
 import aiohttp
+import joblib
 from data.ws_client import init_all_buffers, start_ws_listener
 from features.feature_aggregator import aggregate_features
 from model.predictor import load_model_for_token, load_threshold_for_token, predict
@@ -21,7 +23,7 @@ from robot.trading_env import TradingEnv  # or wherever it's located
 from robot.helper_function import evaluate_rl_bot
 RL_MODELS = {}  # Store models per token
 
-
+models = {}
 async def retrain_daily():
     while True:
         now = datetime.now(timezone.utc)
@@ -87,32 +89,41 @@ def validate_features(expected_features, features):
     if missing_features:
         print(f"⚠️ Missing features: {missing_features}")
         
-
-async def send_signal_to_trading_server(token, candle, features_by_horizon, predictions, rl_response=None):
-    signal_payload = {
-        "token": token,
-        "candle": candle,
-        "features": features_by_horizon,  # Send all timeframes
-        "predictions": predictions,
-        "rl_response": rl_response,
+def reload_rl_model(token):
+    model_path = f"models/ppo_trading_agent/{token}/ppo_trading_{token}.zip"
+    env = TradingEnv(token)
+    RL_MODELS[token] = {
+        "env": env,
+        "model": PPO.load(model_path, env=env, device="cpu")
     }
+        
+def reload_llm_model(token, frame):
+    from model.utils import load_feature_names_for_token
+    model_path = f"model/latest/latest_model_{token.lower()}_{frame}.xgb"
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post("http://localhost:5000/signal/update", json=signal_payload) as resp:
-                if resp.status != 200:
-                    print(f"❌ Failed to send signal: {await resp.text()}")
-                else:
-                    print(f"📤 Sent signal for {token} → Trading Server")
+        model = joblib.load(model_path)
+        feature_names = load_feature_names_for_token(token, frame)
+        threshold = load_threshold_for_token(token, frame)
+
+        models[token.upper()][frame] = {
+            "model": model,
+            "features": feature_names,
+            "threshold": threshold,
+        }
+        print(f"✅ Reloaded {token.upper()} {frame} model successfully.")
+
     except Exception as e:
-        print(f"⚠️ Could not connect to trading server: {e}")
+        print(f"❌ Failed to reload {token.upper()} {frame}: {e}")
+
+
 
 async def main():
     print("Checking Historical Data and Downloading if needed...")
     await fetch_all_candles()
     from data.utils.convert_to_features import convert_all_from_daily
     convert_all_from_daily(days=3)
-    models = {}
+    
     for pair in WATCHED_PAIRS:
         token = pair.split("/")[0].upper()
         model_filename = f"ppo_trading_{token}.zip"
@@ -182,7 +193,8 @@ async def main():
 
             predictions[frame] = predict(model, features, feature_names, threshold)
             features_by_horizon[frame] = features
-            await send_signal_to_trading_server(token, latest_data, features, predictions, result)
+            from utils.send_trader import send_signal_to_trading_server
+            
             debug_path = f"logs/feature_debug_{pair}_{frame}.txt"
             with open(debug_path, "w", encoding="utf-8") as f:
                 f.write(f"🔎 Feature Snapshot for {pair} {frame} \n")
@@ -197,7 +209,7 @@ async def main():
                     except Exception as e:
                         f.write(f"{key:<30}: ❌ Error printing value ({e})\n")
 
-
+        await send_signal_to_trading_server(token, latest_data, features_by_horizon, predictions, result)
         decision, PassedSignal = evaluate_multi_signal(predictions, token, features_by_horizon, latest_data["close"])
 
         if decision:
@@ -237,5 +249,7 @@ async def main():
 if __name__ == "__main__":
     if platform.system() == "Windows":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    from model.utils.model_watcher import start_model_reload_watcher
+    threading.Thread(target=start_model_reload_watcher, daemon=True).start()
     asyncio.run(main())
     
