@@ -53,7 +53,8 @@ export default function AccountList() {
             </div>
             <div className="flex w-full justify-between">
               <p>Open Trades: {account.open_trade_ids?.length || 0}</p>
-              <p>Trade Log: {account.trade_log?.length || 0}</p>
+              <p>wins: {account.win_count || 0}</p>
+              <p>losses: {account.loss_count || 0}</p>
             </div>
           </CardContent>
         </Card>
