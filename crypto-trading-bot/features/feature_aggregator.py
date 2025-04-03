@@ -9,10 +9,35 @@ from data.utils.timeframes import convert_tf
 from data.utils.timeframes import update_multi_tf_buffers
 
 REQUIRED_ALWAYS = [
-    "macd", "macd_cross", "macd_histogram", 
-    "rsi", "sma_20", "ema_20",
-    "volume_surge", "volume_vs_median", 
-    "momentum_5", "doji_count", "trend_strength_5"
+    # General Indicators
+    "macd", "macd_cross", "macd_histogram", "macd_direction", "macd_persistence",
+    "rsi", "rsi_cross_50", "rsi_direction_3", "rsi_deviation",
+    "sma_20", "ema_20",
+
+    # Volume Features
+    "volume_surge", "volume_vs_median", "volume_trend", "volume_zscore",
+
+    # Momentum & Volatility
+    "momentum_5", "acceleration", "trend_strength_5", "pct_change_1m", "noise_ratio",
+
+    # Candle Shape Features
+    "candle_body", "candle_spread", "candle_type", "body_ratio",
+    "gap", "gap_pct", "close_position_ratio",
+
+    # Candlestick Patterns
+    "doji_count", "is_doji", "bearish_count_5", "bullish_count_5",
+
+    # Wick Features
+    "wick_top", "wick_bottom",
+
+    # Bollinger Bands / Width
+    "bb_upper", "bb_lower", "bollinger_width_pct",
+
+    # Volatility/ATR
+    "atr_14", "volatility_5",
+
+    # Real-Time Additions
+    "realtime_close", "realtime_volume"
 ]
 
 def aggregate_features(pair, features_history, latest_data, feature_names, candle_history):
@@ -25,7 +50,7 @@ def aggregate_features(pair, features_history, latest_data, feature_names, candl
     if len(features_history) < 30:
         print(f"[Aggregate] ⚠️ Not enough candles for {pair}. Only {len(features_history)} rows.")
         return {}
-    required_features = list(set(feature_names + REQUIRED_ALWAYS))
+
     # --- Use the enriched 1-minute data directly
     df_1m = pd.DataFrame(features_history).copy()
     df_1m["timestamp"] = pd.to_datetime(df_1m["timestamp"], errors="coerce", utc=True)
@@ -46,7 +71,8 @@ def aggregate_features(pair, features_history, latest_data, feature_names, candl
     base_df = pd.DataFrame(candle_history)
     base_df = base_df.copy()
     df_with_indicators = calculate_indicators(base_df)
-
+    enriched_feature_keys = list(df_with_indicators.columns)
+    required_features = list(set(feature_names + REQUIRED_ALWAYS + enriched_feature_keys))
     # Check for missing features
     for feature in required_features:
         if feature not in weighted and feature not in df_with_indicators.columns:
@@ -79,5 +105,9 @@ def aggregate_features(pair, features_history, latest_data, feature_names, candl
         # Final fallback (logic-based)
         if feature not in final_features:
             compute_missing_feature(feature, weighted, base_df, final_features)
+            
+    if feature not in final_features:
+        print(f"⚠️ Feature {feature} not found in any DataFrame or computed.")
+        
             
     return final_features

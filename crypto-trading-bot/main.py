@@ -5,7 +5,7 @@ import aiohttp
 import joblib
 from data.ws_client import init_all_buffers, start_ws_listener
 from features.feature_aggregator import aggregate_features
-from model.predictor import load_model_for_token, load_threshold_for_token, predict
+from model.predictor import load_model_for_token, load_threshold_for_token, predict, load_feature_names_for_token
 from trading.strategy import evaluate_multi_signal
 from trading.trade_executor import execute_trade
 from trading.paper_wallet import  export_account_snapshot, export_open_trades, log_live_account_status, log_live_snapshot, simulate_trade, update_trade_outcomes
@@ -98,7 +98,6 @@ def reload_rl_model(token):
     }
         
 def reload_llm_model(token, frame):
-    from model.utils import load_feature_names_for_token
     model_path = f"model/latest/latest_model_{token.lower()}_{frame}.xgb"
 
     try:
@@ -191,7 +190,7 @@ async def main():
             validate_features(feature_names, features)
             features.update(add_live_momentum_features(feature_buffer[symbol]))
 
-            predictions[frame] = predict(model, features, feature_names, threshold)
+            predictions[frame] = predict(model, features, feature_names, threshold, token)
             features_by_horizon[frame] = features
             from utils.send_trader import send_signal_to_trading_server
             
