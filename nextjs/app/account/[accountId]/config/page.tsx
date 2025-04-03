@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import {  useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 
 export default function AccountPage({ params }: { params: { accountId: string } }) {
   const accountId = params.accountId;
-  const dispatch = useDispatch();
   const account = useSelector((state: RootState) => state.accounts.byId[accountId]);
 
   const [activeToken, setActiveToken] = useState<string | null>(null);
@@ -26,7 +25,7 @@ export default function AccountPage({ params }: { params: { accountId: string } 
       setRiskLevels(initialLevels);
       setLiveConfig(JSON.parse(JSON.stringify(account.config)));
     }
-  }, [account]);
+  }, [account, activeToken]);
 
   const presets = [
     { "1m": 0.95, "15m": 0.92, "1h": 0.9, "1d": 0.88 },

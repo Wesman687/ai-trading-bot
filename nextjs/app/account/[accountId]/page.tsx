@@ -1,7 +1,7 @@
 // app/(routes)/account/[id]/page.tsx
 'use client';
 
-import { useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -13,98 +13,174 @@ import { deleteAccount, fetchAccountById } from '@/actions/accounts';
 import { useRouter } from 'next/navigation';
 import { Trade } from '@/types/account';
 import { Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts';
+import TradeHistoryCard from '@/components/TradeHistoryCard';
 
 
-export default function AccountPage({ params }: { params: { accountId: string } }) {
-    const accountId = params.accountId;
+export default function AccountPage({ params }: { params: Promise<{ accountId: string }> }) {
+  const { accountId } = use(params); // ✅ unwrap the promise
+
     const account = useSelector((state: RootState) => state.accounts.byId[accountId]);
     const dispatch = useDispatch();
+    const [showConfig, setShowConfig] = useState(false);
+    const tradeLog = useSelector((state: RootState) =>
+      account?.closed_trade_ids?.map(id => state.trades.byId[id]).filter(Boolean) || []
+    );
     const router = useRouter()
-    
     useEffect(() => {
       if (!account) {
         fetchAccountById(accountId)(dispatch);
-      }
+      } 
     }, [accountId, dispatch, account]);
   
     if (!account) return <div className="text-center mt-10">Loading account...</div>;
   
-    const { balance, net_pnl, open_trades, trade_log, config } = account;
-  
+    const { balance, net_pnl, open_trades, config } = account;
+
+    console.log(account)
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Account: {accountId}</h1>
           <div className="space-x-2">
-          <Button onClick={() => router.push(`/account/${accountId}/config`)}>Edit Config</Button>
-            <Button variant="destructive" onClick={() => deleteAccount(accountId)}>Delete</Button>
+            <Button onClick={() => router.push(`/account/${accountId}/config`)}>
+              Edit Config
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAccount(accountId)}
+            >
+              Delete
+            </Button>
           </div>
         </div>
-  
+
         <Card>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 align-center">
             <div>
-              <p className="text-lg">Balance:</p>
-              <p className="text-xl font-semibold">${balance.toFixed(2)}</p>
+              <p className="text-sm text-gray-200">Balance</p>
+              <p className="text-lg font-bold">${balance.toFixed(2)}</p>
             </div>
+
             <div>
-              <p className="text-lg">Net PnL:</p>
-              <p className="text-xl font-semibold">${net_pnl.toFixed(2)}</p>
+              <p className="text-sm text-gray-200">Available Balance</p>
+              <p
+                className={`text-lg font-bold ${
+                  account.available_balance > 0
+                    ? "text-green-600"
+                    : net_pnl < 0
+                    ? "text-red-600"
+                    : "text-gray-600"
+                }`}
+              >
+                ${account.available_balance.toFixed(2)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-200">Trading Risk</p>
+              <p className="text-lg font-bold">{account.trade_risk_pct}x</p>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-200">Net PnL</p>
+              <p
+                className={`text-lg font-bold ${
+                  net_pnl > 0
+                    ? "text-green-600"
+                    : net_pnl < 0
+                    ? "text-red-600"
+                    : "text-gray-600"
+                }`}
+              >
+                ${net_pnl.toFixed(2)}
+              </p>
             </div>
           </CardContent>
         </Card>
-  
         <Card>
           <CardContent>
             <h2 className="text-xl font-semibold mb-4">Open Trades</h2>
             {open_trades.length === 0 ? (
               <p>No open trades.</p>
             ) : (
-              <ul className="list-disc pl-4 space-y-2">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-h-[30vh] overflow-y-auto pr-2">
                 {open_trades.map((trade: Trade) => (
-                  <li key={trade.trade_id}>
-                    {trade.token} - {trade.direction} - Entry: ${trade.entry_price} - Size: ${trade.trade_size}
-                  </li>
+                  <div
+                    key={trade.trade_id}
+                    className="bg-muted p-3 rounded-lg shadow-sm border"
+                  >
+                    <div className="flex justify-between font-semibold">
+                      <span>{trade.token.toUpperCase()}</span>
+                      <span
+                        className={
+                          trade.current_pnl >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }
+                      >
+                        {trade.current_pnl >= 0 ? "+" : ""}$
+                        {trade.current_pnl.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-200">
+                      {trade.direction.toUpperCase()} — Entry: $
+                      {trade.entry_price} — Size: ${trade.trade_size.toFixed(4)}
+                    </div>
+                    <div
+                      className={`text-xs mt-1 ${
+                        trade.current_price > trade.entry_price
+                          ? "text-green-600"
+                          : trade.current_price < trade.entry_price
+                          ? "text-red-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      Current Price: ${trade.current_price}
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>
-  
+
+        {tradeLog?.length > 9 && <TradeHistoryCard trades={tradeLog} />}
         <Card>
           <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Trade History</h2>
-            {trade_log.length === 0 ? (
-              <p>No trades yet.</p>
-            ) : (
-              <ul className="list-disc pl-4 space-y-2">
-                {trade_log.map((trade: Trade, index: number) => (
-                  <li key={index}>
-                    {trade.token} - {trade.direction} - Entry: ${trade.entry_price} → Exit: ${trade.exit_price} = {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
-                  </li>
-                ))}
-              </ul>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold mb-4">Config</h2>
+              <Button
+                onClick={() => setShowConfig(!showConfig)}
+                variant="outline"
+              >
+                {showConfig ? "Hide" : "Show"}
+              </Button>
+            </div>
+            {showConfig && (
+              <pre className="bg-gray-900 text-white text-sm p-4 rounded-xl overflow-x-auto">
+                {JSON.stringify(config, null, 2)}
+              </pre>
             )}
           </CardContent>
         </Card>
-  
-        <Card>
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Config</h2>
-            <pre className="bg-gray-900 text-white text-sm p-4 rounded-xl overflow-x-auto">
-              {JSON.stringify(config, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-  
+
         <Card>
           <CardContent>
             <h2 className="text-xl font-semibold mb-4">Performance Chart</h2>
-            <LineChart width={500} height={300} data={account.performance || []}>
+            <LineChart
+              width={500}
+              height={300}
+              data={account.performance || []}
+            >
               <XAxis dataKey="timestamp" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="net_pnl" stroke="#8884d8" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="net_pnl"
+                stroke="#8884d8"
+                strokeWidth={2}
+              />
             </LineChart>
           </CardContent>
         </Card>

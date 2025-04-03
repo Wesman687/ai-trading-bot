@@ -6,7 +6,6 @@ import { Button, Card, CardContent } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { LineChart, XAxis, YAxis, Tooltip, Line } from 'recharts';
 
 export default function AccountPage({ params }: { params: { accountId: string } }) {
     const accountId = params.accountId;
@@ -47,23 +46,37 @@ export default function AccountPage({ params }: { params: { accountId: string } 
             </div>
           </CardContent>
         </Card>
-  
         <Card>
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Open Trades</h2>
-            {open_trades.length === 0 ? (
-              <p>No open trades.</p>
-            ) : (
-              <ul className="list-disc pl-4 space-y-2">
-                {open_trades.map((trade: Trade) => (
-                  <li key={trade.trade_id}>
-                    {trade.token} - {trade.direction} - Entry: ${trade.entry_price} - Size: ${trade.trade_size}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+  <CardContent>
+    <h2 className="text-xl font-semibold mb-4">Open Trades</h2>
+    {open_trades.length === 0 ? (
+      <p>No open trades.</p>
+    ) : (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-h-[30vh] overflow-y-auto pr-2">
+        {open_trades.map((trade: Trade) => (
+          <div
+            key={trade.trade_id}
+            className="bg-muted p-3 rounded-lg shadow-sm border"
+          >
+            <div className="flex justify-between font-semibold">
+              <span>{trade.token.toUpperCase()}</span>
+              <span className={trade.current_pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
+                {trade.current_pnl >= 0 ? '+' : ''}
+                ${trade.current_pnl.toFixed(2)}
+              </span>
+            </div>
+            <div className="text-sm text-gray-700">
+              {trade.direction.toUpperCase()} — Entry: ${trade.entry_price} — Size: ${trade.trade_size}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              Current Price: ${trade.current_price}
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </CardContent>
+</Card>
   
         <Card>
           <CardContent>
@@ -90,18 +103,7 @@ export default function AccountPage({ params }: { params: { accountId: string } 
             </pre>
           </CardContent>
         </Card>
-  
-        <Card>
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Performance Chart</h2>
-            <LineChart width={500} height={300} data={account.performance || []}>
-              <XAxis dataKey="timestamp" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="net_pnl" stroke="#8884d8" strokeWidth={2} />
-            </LineChart>
-          </CardContent>
-        </Card>
+
       </div>
     );
   }

@@ -1,3 +1,4 @@
+import { API_BASE } from '@/lib/config';
 import {
     fetchAccountsStart,
     fetchAccountsSuccess,
@@ -8,12 +9,11 @@ import {
   import { AppDispatch } from '@/store/store';
 import { Config } from '@/types/config';
 import axios from 'axios';
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000';
   
   export const fetchAccounts = () => async (dispatch: AppDispatch) => {
     dispatch(fetchAccountsStart());
     try {
-      const res = await axios.get(`${API_BASE}/account`);
+      const res = await axios.get(`${API_BASE}/account/`);
       dispatch(fetchAccountsSuccess(res.data));
     } catch (err: unknown) {
       if (err instanceof Error) {

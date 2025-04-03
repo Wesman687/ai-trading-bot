@@ -21,6 +21,7 @@ from model.predictor import load_feature_names_for_token
 from stable_baselines3 import PPO
 from robot.trading_env import TradingEnv  # or wherever it's located
 from robot.helper_function import evaluate_rl_bot
+import xgboost as xgb
 RL_MODELS = {}  # Store models per token
 
 models = {}
@@ -89,6 +90,16 @@ def validate_features(expected_features, features):
     if missing_features:
         print(f"⚠️ Missing features: {missing_features}")
         
+        
+LOG_FILE = "logs/model_reload.log"
+os.makedirs("logs", exist_ok=True)
+
+def log_reload_event(message: str):
+    timestamp = datetime.now(timezone.utc).isoformat()
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{timestamp}] {message}\n")
+
+
 def reload_rl_model(token):
     model_path = f"models/ppo_trading_agent/{token}/ppo_trading_{token}.zip"
     env = TradingEnv(token)
@@ -96,25 +107,29 @@ def reload_rl_model(token):
         "env": env,
         "model": PPO.load(model_path, env=env, device="cpu")
     }
+    log_reload_event(f"✅ RL model reloaded for {token} from {model_path}")
         
 def reload_llm_model(token, frame):
-    model_path = f"model/latest/latest_model_{token.lower()}_{frame}.xgb"
-
     try:
-        model = joblib.load(model_path)
-        feature_names = load_feature_names_for_token(token, frame)
-        threshold = load_threshold_for_token(token, frame)
+        loaded = load_model_for_token(token, frame)
+        feature_names = loaded["features"]
+        threshold = loaded["threshold"]
+        model = loaded["model"]
 
         models[token.upper()][frame] = {
             "model": model,
             "features": feature_names,
             "threshold": threshold,
         }
-        print(f"✅ Reloaded {token.upper()} {frame} model successfully.")
+
+        msg = f"✅ Reloaded LLM model for {token.upper()} {frame} from model/latest/latest_model_{token.lower()}_{frame}.xgb"
+        print(msg)
+        log_reload_event(msg)
 
     except Exception as e:
-        print(f"❌ Failed to reload {token.upper()} {frame}: {e}")
-
+        msg = f"❌ Failed to reload {token.upper()} {frame}: {e}"
+        print(msg)
+        log_reload_event(msg)
 
 
 async def main():
@@ -209,38 +224,7 @@ async def main():
                         f.write(f"{key:<30}: ❌ Error printing value ({e})\n")
 
         await send_signal_to_trading_server(token, latest_data, features_by_horizon, predictions, result)
-        decision, PassedSignal = evaluate_multi_signal(predictions, token, features_by_horizon, latest_data["close"])
 
-        if decision:
-            direction = decision["direction"]
-            confidence = decision["confidence"]
-            duration = decision["duration"]
-            horizon = decision["horizon"]
-            features = decision["features"]
-
-            enriched_context = {
-                "pair": pair,
-                "prediction": predictions,
-                "best_direction": direction,
-                "confidence": confidence,
-                "duration_minutes": duration,
-                "horizon": horizon,
-                "features": features,
-                "price": latest_data["close"],
-                "timestamp": latest_data.get("timestamp")
-            }
-            from ai_trader.ai_trader_decision import ai_trader_decision
-            ai_trader_decision(enriched_context)
-            print(f"[TRADE] 🚀 Signal: {direction.upper()} | Confidence: {confidence:.3f} | Horizon: {horizon} | Hold: {duration}m")
-            execute_trade(pair, decision)
-
-        current_prices[pair] = latest_data["close"]
-        log_live_account_status(current_prices)
-        log_live_snapshot(pair=pair, price=latest_data["close"])
-        update_trade_outcomes(current_prices, pair, PassedSignal)
-        export_account_snapshot()
-        export_open_trades()
-        
     
     print("Starting WebSocket listeners...")
     await start_ws_listener([s.lower().replace("/", "") for s in WATCHED_PAIRS], on_price_update)
