@@ -1,81 +1,42 @@
 
-from pathlib import Path
 import threading
-import aiohttp
-import joblib
 from data.ws_client import init_all_buffers, start_ws_listener
 from features.feature_aggregator import aggregate_features
-from model.predictor import load_model_for_token, load_threshold_for_token, predict, load_feature_names_for_token
-from trading.strategy import evaluate_multi_signal
-from trading.trade_executor import execute_trade
-from trading.paper_wallet import  export_account_snapshot, export_open_trades, log_live_account_status, log_live_snapshot, simulate_trade, update_trade_outcomes
 from config import    HORIZONS,  WATCHED_PAIRS
 from data.daily_fetcher import fetch_all_candles
 from trading.momentum import add_live_momentum_features
 import asyncio
-from datetime import datetime, timedelta, timezone
-import os
+from model.predictor import predict
 import platform
 import json
-from model.predictor import load_feature_names_for_token
-from stable_baselines3 import PPO
-from robot.trading_env import TradingEnv  # or wherever it's located
+from config import models, RL_MODELS
 from robot.helper_function import evaluate_rl_bot
-import xgboost as xgb
-RL_MODELS = {}  # Store models per token
+from data.utils.convert_to_features import convert_all_from_daily
+from model.utils.model_watcher import start_model_reload_watcher
+from utils.model_loaders import load_all_models
 
-models = {}
-async def retrain_daily():
-    while True:
-        now = datetime.now(timezone.utc)
-        if now.hour == 1 and now.minute == 0:
-            print("⏳ [Retrain] Starting daily retraining...")
 
-            for pair in WATCHED_PAIRS:
-                token = pair.split("/")[0].upper()
+booting_up = True  # global flag to suppress reloads if needed
 
-                # ✅ Step 1: Refresh 7-day split data
-                print(f"🔄 [Retrain] Refreshing 7-day history for {token}")
+async def boot():
+    # Async boot step
+    await fetch_all_candles()
 
-                # ✅ Step 2: Aggregate all 7d CSVs into a training file
-                daily_dir = "data/daily"
-                csv_out = f"data/logs/{token}USDT_ohlcv.csv"
-                with open(csv_out, "w") as outfile:
-                    header_written = False
-                    for filename in sorted(os.listdir(daily_dir)):
-                        if filename.startswith(f"{token}USDT_1m") and filename.endswith(".csv"):
-                            with open(os.path.join(daily_dir, filename), "r") as infile:
-                                lines = infile.readlines()
-                                if not header_written:
-                                    outfile.write(lines[0])  # write header once
-                                    header_written = True
-                                outfile.writelines(lines[1:])  # skip header after first
-                    
+    # Sync steps after async completes
+    convert_all_from_daily(days=3)   # CSV -> feature JSONL
+    load_all_models()                # Load XGB, RL, etc.
 
-                # ✅ Step 3: Run training
-                cmd = f"python model/train_local.py --csv {csv_out} --token {token}"
-                print(f"📦 [Retrain] Running: {cmd}")
-                exit_code = os.system(cmd)
+    global booting_up
+    booting_up = False               # ✅ Now it's safe to start watching
 
-                if exit_code == 0:
-                    print(f"✅ [Retrain] {token} training completed.")
-                else:
-                    print(f"❌ [Retrain] {token} failed with exit code {exit_code}")
+    # Start model file watcher
+    threading.Thread(target=start_model_reload_watcher, daemon=True).start()
 
-            await asyncio.sleep(60)  # wait 1 minute so it doesn’t double run
-        else:
-            await asyncio.sleep(30)
+    # Start main async app loop
+    await main()
+    
 
-async def test_binance_connection():
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://api.binance.com/api/v3/time") as resp:
-                if resp.status == 200:
-                    print("✅ Binance API is reachable")
-                else:
-                    print(f"⚠️ Binance API returned status {resp.status}")
-    except Exception as e:
-        print(f"❌ Could not reach Binance API: {e}")
+
         
 def symbol_from_pair(pair: str) -> str:
     return pair.replace("/USDT", "").upper()
@@ -90,85 +51,13 @@ def validate_features(expected_features, features):
     if missing_features:
         print(f"⚠️ Missing features: {missing_features}")
         
-        
-LOG_FILE = "logs/model_reload.log"
-os.makedirs("logs", exist_ok=True)
-
-def log_reload_event(message: str):
-    timestamp = datetime.now(timezone.utc).isoformat()
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[{timestamp}] {message}\n")
-
-
-def reload_rl_model(token):
-    model_path = f"models/ppo_trading_agent/{token}/ppo_trading_{token}.zip"
-    env = TradingEnv(token)
-    RL_MODELS[token] = {
-        "env": env,
-        "model": PPO.load(model_path, env=env, device="cpu")
-    }
-    log_reload_event(f"✅ RL model reloaded for {token} from {model_path}")
-        
-def reload_llm_model(token, frame):
-    try:
-        loaded = load_model_for_token(token, frame)
-        feature_names = loaded["features"]
-        threshold = loaded["threshold"]
-        model = loaded["model"]
-
-        models[token.upper()][frame] = {
-            "model": model,
-            "features": feature_names,
-            "threshold": threshold,
-        }
-
-        msg = f"✅ Reloaded LLM model for {token.upper()} {frame} from model/latest/latest_model_{token.lower()}_{frame}.xgb"
-        print(msg)
-        log_reload_event(msg)
-
-    except Exception as e:
-        msg = f"❌ Failed to reload {token.upper()} {frame}: {e}"
-        print(msg)
-        log_reload_event(msg)
 
 
 async def main():
     print("Checking Historical Data and Downloading if needed...")
-    await fetch_all_candles()
-    from data.utils.convert_to_features import convert_all_from_daily
-    convert_all_from_daily(days=3)
+
     
-    for pair in WATCHED_PAIRS:
-        token = pair.split("/")[0].upper()
-        model_filename = f"ppo_trading_{token}.zip"
-        model_path = os.path.join("models", "ppo_trading_agent", token, model_filename)
 
-        try:
-            env = TradingEnv(token)
-            model = PPO.load(model_path, env=env, device="cpu") 
-            RL_MODELS[token] = {
-                "env": env,
-                "model": model
-            }
-            print(f"✅ Loaded RL model for {token}")
-        except Exception as e:
-            print(f"❌ Failed to load model for {token}: {e}")
-    for pair in WATCHED_PAIRS:
-        token = pair.split("/")[0]
-        models[token] = {}
-
-        for _, info in HORIZONS.items():
-            try:
-                frame = info["frame"]
-                threshold = info["threshold"]
-                
-                models[token][frame] = {
-                    "model": load_model_for_token(token, frame),
-                    "features": load_feature_names_for_token(token, frame),
-                    "threshold": threshold,
-                }
-            except Exception as e:
-                print(f"❌ Failed to load {token.upper()} model for {info}: {e}")
     await init_all_buffers()
     print("Bootstrapping historical data...")
     current_prices = {}
@@ -222,17 +111,17 @@ async def main():
                             f.write(f"{key:<30}: {val}\n")
                     except Exception as e:
                         f.write(f"{key:<30}: ❌ Error printing value ({e})\n")
-
-        await send_signal_to_trading_server(token, latest_data, features_by_horizon, predictions, result)
-
+        try:
+            await send_signal_to_trading_server(token, latest_data, features_by_horizon, predictions, result)
+        except Exception as e:
+            print(f"❌ Error sending signal to trading server: {e}")
     
     print("Starting WebSocket listeners...")
     await start_ws_listener([s.lower().replace("/", "") for s in WATCHED_PAIRS], on_price_update)
 
+
 if __name__ == "__main__":
     if platform.system() == "Windows":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    from model.utils.model_watcher import start_model_reload_watcher
-    threading.Thread(target=start_model_reload_watcher, daemon=True).start()
-    asyncio.run(main())
-    
+
+    asyncio.run(boot())

@@ -33,7 +33,7 @@ export interface FilterShortSetup {
 export interface TokenConfig {
   auto_trade: boolean;
   trade_pct: number;
-  confidence_thresholds: Record<"1m" | "15m" | "1h" | "1d", number>;
+  confidence_thresholds: Record<'1m' | '15m' | '1h' | '1d', number>;
   filters: {
     base: FilterBase;
     macd_long: FilterMACDLong;
@@ -42,4 +42,7 @@ export interface TokenConfig {
   exit_strategy: ExitStrategy;
 }
 
+export type Timeframe = '1m' | '15m' | '1h' | '1d';
+export type FilterKey = keyof TokenConfig['filters']; // 'base' | 'macd_long' | 'short_setup'
+export type ExitStrategyKey = keyof ExitStrategy;
 export type Config = Record<string, TokenConfig>; // e.g. BTC, SOL, XRP

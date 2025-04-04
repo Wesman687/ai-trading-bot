@@ -28,7 +28,7 @@ export default function AccountList() {
     const winRateClass = winRate !== 'N/A' && parseFloat(winRate) >= 50 ? 'text-green-600' : 'text-red-600';
 
     return (
-      <Link key={account.account_id} href={`/account/${account.account_id}`}>
+      <Link key={account._id} href={`/account/${account._id}`}>
         <Card className="cursor-pointer hover:shadow-xl transition">
           <CardContent>
             <h2 className="text-lg font-semibold">{account.name}</h2>

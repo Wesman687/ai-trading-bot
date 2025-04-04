@@ -1,112 +1,52 @@
 'use client'
-import { deleteAccount, fetchAccountById } from "@/actions/accounts";
-import { selectAccountById } from "@/store/selectors/account";
-import { Trade } from "@/types/account";
-import { Button, Card, CardContent } from "@mui/material";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
-export default function AccountPage({ params }: { params: { accountId: string } }) {
-    const accountId = params.accountId;
-    const account = useSelector(selectAccountById(accountId));
-    const dispatch = useDispatch();
-    const router = useRouter();
-  
-    useEffect(() => {
-      if (!account) {
-        fetchAccountById(accountId)
-      }
-    }, [accountId, dispatch, account]);
-  
-    if (!account) return <div className="text-center mt-10">Loading account...</div>;
-  
-    const { balance, net_pnl, open_trades, trade_log, config } = account;
-  
+export default function CreateAccountPage() {
+  const router = useRouter()
+  const [accountId, setAccountId] = useState('')
+  const [name, setName] = useState('')
+  const [balance, setBalance] = useState(10000)
+  const [leverage, setLeverage] = useState(1.5)
+  const [riskPct, setRiskPct] = useState(0.15)
+  const [tradeSize, setTradeSize] = useState(1000)
 
-    return (
-      <div className="p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Account: {accountId}</h1>
-          <div className="space-x-2">
-          <Button onClick={() => router.push(`/account/${accountId}/config`)}>Edit Config</Button>
-            <Button variant="contained" onClick={() => deleteAccount(accountId)}>Delete</Button>
-          </div>
-        </div>
-  
-        <Card>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-lg">Balance:</p>
-              <p className="text-xl font-semibold">${balance.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-lg">Net PnL:</p>
-              <p className="text-xl font-semibold">${net_pnl.toFixed(2)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-  <CardContent>
-    <h2 className="text-xl font-semibold mb-4">Open Trades</h2>
-    {open_trades.length === 0 ? (
-      <p>No open trades.</p>
-    ) : (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-h-[30vh] overflow-y-auto pr-2">
-        {open_trades.map((trade: Trade) => (
-          <div
-            key={trade.trade_id}
-            className="bg-muted p-3 rounded-lg shadow-sm border"
-          >
-            <div className="flex justify-between font-semibold">
-              <span>{trade.token.toUpperCase()}</span>
-              <span className={trade.current_pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
-                {trade.current_pnl >= 0 ? '+' : ''}
-                ${trade.current_pnl.toFixed(2)}
-              </span>
-            </div>
-            <div className="text-sm text-gray-700">
-              {trade.direction.toUpperCase()} — Entry: ${trade.entry_price} — Size: ${trade.trade_size}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              Current Price: ${trade.current_price}
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </CardContent>
-</Card>
-  
-        <Card>
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Trade History</h2>
-            {trade_log.length === 0 ? (
-              <p>No trades yet.</p>
-            ) : (
-              <ul className="list-disc pl-4 space-y-2">
-                {trade_log.map((trade: Trade, index: number) => (
-                  <li key={index}>
-                    {trade.token} - {trade.direction} - Entry: ${trade.entry_price} → Exit: ${trade.exit_price} = {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-  
-        <Card>
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Config</h2>
-            <pre className="bg-gray-900 text-white text-sm p-4 rounded-xl overflow-x-auto">
-              {JSON.stringify(config, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+  const handleSubmit = async () => {
+    if (!accountId) return toast.error("Account ID required")
 
-      </div>
-    );
+    const res = await fetch(`/api/account/${accountId}/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        balance,
+        leverage,
+        trade_risk_pct: riskPct,
+        trade_size: tradeSize,
+        config: null // or send a custom config object
+      }),
+    })
+
+    if (res.ok) {
+      toast.success('Account created!')
+      router.push(`/account/${accountId}/config`)
+    } else {
+      const err = await res.json()
+      toast.error(`Failed: ${err.detail}`)
+    }
   }
 
-
-  
+  return (
+    <div className="p-6 space-y-4 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold">Create New Account</h1>
+      <input placeholder="Account ID" value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full px-3 py-2 border rounded" />
+      <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border rounded" />
+      <input type="number" value={balance} onChange={e => setBalance(+e.target.value)} className="w-full px-3 py-2 border rounded" />
+      <input type="number" step="0.01" value={riskPct} onChange={e => setRiskPct(+e.target.value)} className="w-full px-3 py-2 border rounded" />
+      <input type="number" value={tradeSize} onChange={e => setTradeSize(+e.target.value)} className="w-full px-3 py-2 border rounded" />
+      <Button onClick={handleSubmit}>Create</Button>
+    </div>
+  )
+}

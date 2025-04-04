@@ -1,30 +1,31 @@
 // app/(routes)/account/[id]/page.tsx
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RootState } from '@/store/store';
 import { useDispatch, useSelector } from 'react-redux';
 import { deleteAccount, fetchAccountById } from '@/actions/accounts';
 import { useRouter } from 'next/navigation';
 import { Trade } from '@/types/account';
 import { Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts';
 import TradeHistoryCard from '@/components/TradeHistoryCard';
+import { selectTradeLogForAccount } from '@/store/selectors/trade';
+import { selectAccountById } from '@/store/selectors/account';
 
 
 export default function AccountPage({ params }: { params: Promise<{ accountId: string }> }) {
   const { accountId } = use(params); // ✅ unwrap the promise
 
-    const account = useSelector((state: RootState) => state.accounts.byId[accountId]);
+  const memoizedSelector = useMemo(() => selectAccountById(accountId), [accountId]);
+  const account = useSelector(memoizedSelector);
     const dispatch = useDispatch();
     const [showConfig, setShowConfig] = useState(false);
-    const tradeLog = useSelector((state: RootState) =>
-      account?.closed_trade_ids?.map(id => state.trades.byId[id]).filter(Boolean) || []
-    );
+    const memoizedTradeLogSelector = useMemo(() => selectTradeLogForAccount(accountId), [accountId]);
+    const tradeLog = useSelector(memoizedTradeLogSelector);
     const router = useRouter()
     useEffect(() => {
       if (!account) {

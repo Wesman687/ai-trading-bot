@@ -24,12 +24,19 @@ export default function ComboInsightsModal({ token, onClose }: { token: string; 
       const config = account?.config?.[token];
       if (!config || fields.length === 0) continue;
 
+      interface ConfigValueObject {
+        [key: string]: string | number | undefined | ConfigValueObject;
+      }
+      type ConfigValue = string | number | undefined | ConfigValueObject;
+      
       const values = fields.map((field) => {
-        return field
-          .split('.')
-          .reduce((acc, part) => (acc && typeof acc === 'object' && part in acc ? acc[part] : undefined), config);
-      });
-
+              return field.split('.').reduce((acc: ConfigValue, part) => {
+                if (acc && typeof acc === 'object' && part in acc) {
+                  return acc[part];
+                }
+                return undefined;
+              }, config as unknown as ConfigValue);
+            });
       const key = values.join('|');
       if (!key.includes('undefined')) {
         if (!groups[key]) {
@@ -65,40 +72,63 @@ export default function ComboInsightsModal({ token, onClose }: { token: string; 
     'filters.short_setup.sma_20_buffer',
     'filters.short_setup.momentum_min',
     'filters.short_setup.min_bearish_count',
+    'filters.base.doji_threshold.1m',
+    'filters.base.doji_threshold.15m',
+    'filters.base.doji_threshold.1h',
+    'filters.base.noise_ratio_max',
+    'filters.base.min_trend.1m',
+    'filters.base.min_trend.15m',
+    'filters.base.min_trend.1h',
   ];
+
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent
+        className="w-[95vw] max-w-[1300px] sm:rounded-lg p-6"
+        style={{ width: "95vw", maxWidth: "1300px" }}
+      >
         <DialogHeader>
           <DialogTitle>Custom Config Combo Insights</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <MultiSelect
-            label="Choose Config Fields"
-            options={allFields.map((f) => ({ label: f, value: f }))}
-            value={fields}
-            onChange={setFields}
-          />
+        <div className="space-y-4 w-full flex flex-col gap-4">
+          <div className="flex gap-5 items-center">
+            <div className="w-max">Choose Config Fields</div>
+            <MultiSelect
+              options={allFields.map((f) => ({ label: f, value: f }))}
+              selected={fields}
+              onChange={setFields}
+            />
+          </div>
+          {fields.length > 0 && (
+            <div className="text-sm text-muted-foreground mt-2 w-full">
+              <span className="font-medium">Selected Fields:</span>{" "}
+              {fields.join(" | ")}
+            </div>
+          )}
+          <div className="w-full">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={comboStats}>
+                <XAxis dataKey="config" hide />
+                <YAxis />
+                <Tooltip
+                  formatter={(val: number, name: string) =>
+                    name === "avgPnL"
+                      ? [`$${val.toFixed(2)}`, "Avg PnL"]
+                      : [val.toFixed(2), "Trades"]
+                  }
+                />
+                <Bar dataKey="avgPnL" fill="#4f46e5" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={comboStats}>
-              <XAxis dataKey="config" hide />
-              <YAxis />
-              <Tooltip
-                formatter={(val: number, name: string) =>
-                  name === 'avgPnL' ? [`$${val.toFixed(2)}`, 'Avg PnL'] : [val, 'Trades']
-                }
-              />
-              <Bar dataKey="avgPnL" fill="#4f46e5" />
-            </BarChart>
-          </ResponsiveContainer>
-
-          <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">
+          <ul className="text-sm space-y-1 w-full max-h-60 overflow-y-auto">
             {comboStats.map((s, i) => (
               <li key={i}>
-                <strong>{s.config}</strong> → Avg PnL: ${s.avgPnL.toFixed(2)} ({s.tradeCount} trades)
+                <strong>{s.config}</strong> → Avg PnL: ${s.avgPnL.toFixed(2)} (
+                {s.tradeCount} trades)
               </li>
             ))}
           </ul>

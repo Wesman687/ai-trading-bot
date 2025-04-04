@@ -32,8 +32,8 @@ const accountsSlice = createSlice({
       state.allIds = [];
 
       for (const account of accounts) {
-        state.byId[account.account_id] = account;
-        state.allIds.push(account.account_id);
+        state.byId[account._id] = account;
+        state.allIds.push(account._id);
       }
     },
     fetchAccountsFailure(state, action: PayloadAction<string>) {
@@ -42,9 +42,9 @@ const accountsSlice = createSlice({
     },
     updateAccount(state, action: PayloadAction<Account>) {
       const account = action.payload;
-      state.byId[account.account_id] = account;
-      if (!state.allIds.includes(account.account_id)) {
-        state.allIds.push(account.account_id);
+      state.byId[account._id] = account;
+      if (!state.allIds.includes(account._id)) {
+        state.allIds.push(account._id);
       }
     },
     removeAccount(state, action: PayloadAction<string>) {

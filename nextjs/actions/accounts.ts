@@ -35,9 +35,9 @@ import axios from 'axios';
   };
   
   // Update an account (e.g., config or metadata)
-export const updateAccountConfig = (accountId: string, updatedData: Config) => async (dispatch: AppDispatch) => {
+export const updateAccountConfig = (accountId: string, data: {config: Config}) => async (dispatch: AppDispatch) => {
     try {
-      const res = await axios.put(`${API_BASE}/account/${accountId}/config`, updatedData);
+      const res = await axios.put(`${API_BASE}/account/${accountId}/config`, data);
       dispatch(updateAccount(res.data));
     } catch (err) {
       console.error(`Failed to update account ${accountId}:`, err);

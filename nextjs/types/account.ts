@@ -11,6 +11,7 @@ export interface Account {
   balance: number;
   net_pnl: number;
   win_count: number;
+  trade_size: number;
   loss_count: number;
   performance: [];
   open_trades: Trade[];

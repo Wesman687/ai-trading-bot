@@ -8,6 +8,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+RL_MODELS = {}  # Store models per token
+
+models = {}
+
 BTCC_ACCESS_ID = os.getenv("BTCC_ACCESS_ID")
 BTCC_SECRET_KEY = os.getenv("BTCC_SECRET_KEY")
 BTCC_WS_BASE = os.getenv("BTCC_API_BASE", "wss://kapi1.btloginc.com:9082")
