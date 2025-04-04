@@ -1,93 +1,94 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { Trade } from '@/types/account';
-import { Card, CardContent } from '@/components/ui/card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { format } from 'date-fns';
+import ComboInsightsModal from '@/components/TokenStats/ComboInsightsModal';
+import TokenConfigBreakdown from '@/components/TokenStats/TokenConfigBreakdown';
+import TokenStatsAccordion from '@/components/TokenStats/TokenStatsAccordion';
+import TokenStatsChart from '@/components/TokenStats/TokenStatsChart';
+import TokenStatsSummary from '@/components/TokenStats/TokenStatsSummary';
+import TokenStrategyInsights from '@/components/TokenStats/TokenStrategyInsights';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 export default function TokenStats() {
     const { token } = useParams() as { token: string };
-  
-    const tradesById = useSelector((state: RootState) => state.trades.byId);
-  
-    const trades = useMemo(
-      () => Object.values(tradesById).filter((t: Trade) => t.token === token),
-      [tradesById, token]
+    const [selectedField, setSelectedField] = useState<FieldOptionValue>('stop_loss_pct');
+    type FieldOptionValue = typeof fieldOptions[number]['value'];
+    const [showCombo, setShowCombo] = useState(false);
+    const fieldOptions = [
+      { value: "stop_loss_pct", label: "Stop Loss %" },
+      { value: "trailing_stop_pct", label: "Trailing Stop %" },
+      { value: "volume_surge_min", label: "Volume Surge Min" },
+      { value: "confidence_thresholds.1m", label: "Confidence (1m)" },
+      { value: "confidence_thresholds.15m", label: "Confidence (15m)" },
+      { value: "filters.macd_long.rsi_min", label: "MACD Long RSI Min" },
+      { value: "filters.macd_long.macd_hist_min", label: "MACD Hist Min" },
+      {
+        value: "filters.macd_long.macd_direction_min",
+        label: "MACD Direction Min",
+      },
+      {
+        value: "filters.macd_long.volume_surge_min",
+        label: "MACD Volume Surge Min",
+      },
+      { value: "filters.short_setup.rsi_max", label: "Short Setup RSI Max" },
+      {
+        value: "filters.short_setup.macd_hist_max",
+        label: "Short Setup MACD Hist Max",
+      },
+      { value: "filters.short_setup.ema_20_buffer", label: "EMA 20 Buffer" },
+      { value: "filters.short_setup.sma_20_buffer", label: "SMA 20 Buffer" },
+      { value: "filters.short_setup.momentum_min", label: "Momentum Min" },
+      {
+        value: "filters.short_setup.min_bearish_count",
+        label: "Min Bearish Count",
+      },
+      { value: "filters.base.doji_threshold.1m", label: "Doji Threshold (1m)" },
+        { value: "filters.base.doji_threshold.15m", label: "Doji Threshold (15m)" },
+        { value: "filters.base.doji_threshold.1h", label: "Doji Threshold (1h)" },
+        { value: "filters.base.noise_ratio_max", label: "Noise Ratio Max" },
+        { value: "filters.base.min_trend.1m", label: "Min Trend (1m)" },
+        { value: "filters.base.min_trend.15m", label: "Min Trend (15m)" },
+        { value: "filters.base.min_trend.1h", label: "Min Trend (1h)" },
+    ] as const;
+    return (
+        <div className="p-4 space-y-6">
+            <h1 className="text-2xl font-bold">{token.toUpperCase()} Strategy Overview</h1>
+
+            <TokenStatsSummary token={token} />
+
+
+            <TokenStatsChart token={token} />
+            <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                    <label htmlFor="field" className="text-sm font-medium">
+                        View Config Performance By:
+                    </label>
+                    <Select
+                        value={selectedField}
+                        onValueChange={(value) => setSelectedField(value as FieldOptionValue)}
+                    >
+                        <SelectTrigger className='cursor-pointer'>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {fieldOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button className='cursor-pointer' onClick={() => setShowCombo(true)}>🔬 Custom Combo</Button>
+                </div>
+
+                <TokenStrategyInsights token={token} selectedField={selectedField} />
+            </div>
+            <TokenConfigBreakdown token={token} />
+            {showCombo && <ComboInsightsModal token={token} onClose={() => setShowCombo(false)} />}
+
+            <TokenStatsAccordion token={token} />
+        </div>
     );
-    const [groupedByDate, setGroupedByDate] = useState<Record<string, Trade[]>>({});
-  
-    useEffect(() => {
-      const grouped: Record<string, Trade[]> = {};
-      for (const trade of trades) {
-        const dateKey = format(new Date(trade.entry_time), 'yyyy-MM-dd');
-        if (!grouped[dateKey]) grouped[dateKey] = [];
-        grouped[dateKey].push(trade);
-      }
-      setGroupedByDate(grouped);
-    }, [trades]);
-  
-    const totalPnL = trades.reduce((acc, trade) => acc + (trade.pnl || 0), 0);
-    const wins = trades.filter(t => t.pnl >= 0).length;
-    const losses = trades.filter(t => t.pnl < 0).length;
-  return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold">{token.toUpperCase()} Strategy Overview</h1>
-
-      <Card>
-        <CardContent className="grid grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Trades</p>
-            <p className="text-lg font-bold">{trades.length}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Wins</p>
-            <p className="text-lg font-bold text-green-600">{wins}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Losses</p>
-            <p className="text-lg font-bold text-red-600">{losses}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Total PnL</p>
-            <p className={`text-lg font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${totalPnL.toFixed(2)}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Accordion type="single" collapsible>
-        {Object.entries(groupedByDate).map(([date, dayTrades]) => (
-          <AccordionItem key={date} value={date}>
-            <AccordionTrigger>
-              {date} — {dayTrades.length} trades
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {dayTrades.map((trade, index) => (
-                  <Card key={index} className="p-2 text-sm">
-                    <CardContent className="space-y-1">
-                      <p className="font-semibold">{trade.direction.toUpperCase()}</p>
-                      <p>Entry: ${trade.entry_price}</p>
-                      <p>Exit: ${trade.exit_price}</p>
-                      <p className={trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        PnL: ${trade.pnl?.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Account: {trade.account_id}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-    </div>
-  );
 }
