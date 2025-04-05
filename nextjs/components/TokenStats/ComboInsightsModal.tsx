@@ -13,6 +13,7 @@ export default function ComboInsightsModal({ token, onClose }: { token: string; 
     Object.values(state.trades.byId).filter((t) => t.token === token)
   );
   const accountsById = useSelector((state: RootState) => state.accounts.byId);
+  
 
   const [fields, setFields] = useState<string[]>([]);
 
@@ -20,7 +21,8 @@ export default function ComboInsightsModal({ token, onClose }: { token: string; 
     const groups: Record<string, { count: number; totalPnL: number }> = {};
 
     for (const trade of trades) {
-      const account = accountsById[trade.account_id];
+      const accountIdKey = (trade.account_ref || trade.account_id)?.toString?.();
+      const account = accountsById[accountIdKey];
       const config = account?.config?.[token];
       if (!config || fields.length === 0) continue;
 

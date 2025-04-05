@@ -62,7 +62,7 @@ export default function TokenStatsAccordion({ token }: { token: string }) {
             <AccordionContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {groupedByDate[date].map((trade, index) => {
-                  const accountConfig = accountsById[trade.account_id]?.config?.[trade.token];
+                  const accountConfig = accountsById[trade.account_id || trade.account_ref]?.config?.[trade.token];
                   return (
                     <Card key={index} className="p-2 text-sm">
                       <CardContent className="space-y-1">
@@ -72,7 +72,7 @@ export default function TokenStatsAccordion({ token }: { token: string }) {
                         <p className={trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
                           PnL: ${trade.pnl?.toFixed(2)}
                         </p>
-                        <p className="text-xs text-muted-foreground">Account: {trade.account_id}</p>
+                        <p className="text-xs text-muted-foreground">Account: {trade.account_id || trade.account_ref}</p>
                         {accountConfig && (
                           <pre className="text-xs bg-gray-800 text-white p-2 rounded overflow-x-auto">
                             {JSON.stringify(accountConfig.exit_strategy, null, 2)}

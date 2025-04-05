@@ -25,7 +25,8 @@ export default function TokenStrategyInsights({ token, selectedField }: Props) {
     const groups: Record<string, { count: number; totalPnL: number }> = {};
 
     for (const trade of trades) {
-        const account = accountsById[trade.account_id];
+      const accountIdKey = (trade.account_ref || trade.account_id)?.toString?.();
+      const account = accountsById[accountIdKey]
         const config = account?.config?.[token];
         if (!config) continue;
       

@@ -23,6 +23,7 @@ export interface Account {
 export interface Trade {
   trade_id: string;
   account_id: string;
+  account_ref: string;
   token: string;
   direction: string;
   entry_price: number;

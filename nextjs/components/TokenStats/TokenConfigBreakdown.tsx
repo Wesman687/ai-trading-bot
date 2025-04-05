@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 export default function TokenConfigBreakdown({ token }: { token: string }) {
   const accounts = useSelector((state: RootState) => state.accounts.byId);
   const trades = useSelector((state: RootState) =>
-    Object.values(state.trades.byId).filter((t: Trade) => t.token === token && t.account_id)
+    Object.values(state.trades.byId).filter((t: Trade) => t.token === token && t.account_id || t.account_ref)
   );
 
   const configMap: Record<string, { count: number; totalPnL: number }> = {};
