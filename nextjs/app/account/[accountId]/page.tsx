@@ -10,10 +10,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { deleteAccount, fetchAccountById } from '@/actions/accounts';
 import { useRouter } from 'next/navigation';
 import { Trade } from '@/types/account';
-import { Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts';
 import TradeHistoryCard from '@/components/TradeHistoryCard';
 import { selectTradeLogForAccount } from '@/store/selectors/trade';
 import { selectAccountById } from '@/store/selectors/account';
+import PerformanceCharts from '@/components/PerformanceCharts';
 
 
 export default function AccountPage({ params }: { params: Promise<{ accountId: string }> }) {
@@ -164,26 +164,7 @@ export default function AccountPage({ params }: { params: Promise<{ accountId: s
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4">Performance Chart</h2>
-            <LineChart
-              width={500}
-              height={300}
-              data={account.performance || []}
-            >
-              <XAxis dataKey="timestamp" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="net_pnl"
-                stroke="#8884d8"
-                strokeWidth={2}
-              />
-            </LineChart>
-          </CardContent>
-        </Card>
+        <PerformanceCharts accountId={accountId} />
       </div>
     );
   }
