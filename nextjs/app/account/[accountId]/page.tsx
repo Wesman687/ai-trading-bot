@@ -1,6 +1,5 @@
 // app/(routes)/account/[id]/page.tsx
 'use client';
-
 import { use, useEffect, useMemo, useState } from 'react';
 import {
   Card,

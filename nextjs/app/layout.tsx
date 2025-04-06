@@ -5,6 +5,7 @@ const inter = Inter({ subsets: ['latin'] });
 import { ReduxProvider } from '@/providers/ReduxProvider';
 import { ThemeRegistry } from '@/components/ui/ThemeRegistry';
 import Sidebar from '@/components/layout/SideBar';
+import { Toaster } from 'sonner'; // ✅ Import the toaster
 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
             </main>
           </div>
+          <Toaster position="top-right" richColors /> 
         </ThemeRegistry>
       </ReduxProvider>
       </body>

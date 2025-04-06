@@ -1,52 +1,87 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
+
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import TokenConfigEditor from '@/components/TokenConfigEditor';
+import { Button } from '@/components/ui/button';
+import { createDefaultConfig } from '@/utils/defaultConfig';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { API_BASE } from '@/lib/config';
 
 export default function CreateAccountPage() {
-  const router = useRouter()
-  const [accountId, setAccountId] = useState('')
-  const [name, setName] = useState('')
-  const [balance, setBalance] = useState(10000)
-  const [leverage, setLeverage] = useState(1.5)
-  const [riskPct, setRiskPct] = useState(0.15)
-  const [tradeSize, setTradeSize] = useState(1000)
+  const router = useRouter();
 
+  const [account, setAccount] = useState({
+    name: 'New Account',
+    leverage: 1.5,
+    starting_balance: 10000,
+  });
+  const tokens = useSelector((state: RootState) => state.accounts.availableTokens);
+  const defaultConfig = createDefaultConfig(tokens);
+  const [config, setConfig] = useState(() => defaultConfig);
   const handleSubmit = async () => {
-    if (!accountId) return toast.error("Account ID required")
-
-    const res = await fetch(`/api/account/${accountId}/create`, {
+    const paylog = {
+      name: account.name,
+      leverage: account.leverage,
+      balance: account.starting_balance,
+      config,
+    }
+    console.log(paylog)
+    const res = await fetch(`${API_BASE}/account/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name,
-        balance,
-        leverage,
-        trade_risk_pct: riskPct,
-        trade_size: tradeSize,
-        config: null // or send a custom config object
+        name: account.name,
+        leverage: account.leverage,
+        balance: account.starting_balance,
+        config,
       }),
-    })
-
+    });
     if (res.ok) {
-      toast.success('Account created!')
-      router.push(`/account/${accountId}/config`)
+      const data = await res.json();
+      const accountId = data.account._id;  // ← updated to match new return format
+      console.log('Account created with ID:', accountId);
+      
+      toast.success('Account created with Id!', accountId);
+      // router.push(`/account/${accountId}`);
     } else {
-      const err = await res.json()
-      toast.error(`Failed: ${err.detail}`)
+      const err = await res.json();
+      toast.error(`Failed: ${err.detail}`);
     }
-  }
+  };
 
   return (
-    <div className="p-6 space-y-4 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold">Create New Account</h1>
-      <input placeholder="Account ID" value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full px-3 py-2 border rounded" />
-      <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border rounded" />
-      <input type="number" value={balance} onChange={e => setBalance(+e.target.value)} className="w-full px-3 py-2 border rounded" />
-      <input type="number" step="0.01" value={riskPct} onChange={e => setRiskPct(+e.target.value)} className="w-full px-3 py-2 border rounded" />
-      <input type="number" value={tradeSize} onChange={e => setTradeSize(+e.target.value)} className="w-full px-3 py-2 border rounded" />
-      <Button onClick={handleSubmit}>Create</Button>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Create New Trading Account</h1>
+      <div className="flex flex-col">
+        <label className="text-sm">Starting Balance</label>
+        <input
+          type="number"
+          value={account.starting_balance}
+          onChange={(e) =>
+            setAccount((prev) => ({
+              ...prev,
+              starting_balance: parseFloat(e.target.value),
+            }))
+          }
+          className="border px-2 py-1 rounded"
+        />
+      </div>
+      <TokenConfigEditor
+        config={config}
+        onChange={setConfig}
+        account={account}
+        onAccountChange={(updates) => setAccount((prev) => ({ ...prev, ...updates }))}
+      />
+
+      <div className="flex gap-4 pt-4">
+        <Button onClick={handleSubmit}>Create Account</Button>
+        <Button variant="outline" onClick={() => router.back()}>
+          Cancel
+        </Button>
+      </div>
     </div>
-  )
+  );
 }

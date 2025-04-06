@@ -8,6 +8,7 @@ interface AccountsState {
   allIds: string[];
   loading: boolean;
   error: string | null;
+  availableTokens: string[];  // ✅ Add this
 }
 
 const initialState: AccountsState = {
@@ -15,6 +16,7 @@ const initialState: AccountsState = {
   allIds: [],
   loading: false,
   error: null,
+  availableTokens: [],
 };
 
 const accountsSlice = createSlice({
@@ -30,11 +32,14 @@ const accountsSlice = createSlice({
       const accounts = action.payload;
       state.byId = {};
       state.allIds = [];
-
+      const tokenSet = new Set<string>(); // ✅ Gather tokens
       for (const account of accounts) {
         state.byId[account._id] = account;
         state.allIds.push(account._id);
+        const tokens = Object.keys(account.config || {});
+        tokens.forEach((token) => tokenSet.add(token)); // ✅ Add tokens
       }
+      state.availableTokens = Array.from(tokenSet);
     },
     fetchAccountsFailure(state, action: PayloadAction<string>) {
       state.loading = false;
