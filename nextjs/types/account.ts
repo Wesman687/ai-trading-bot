@@ -18,7 +18,13 @@ export interface Account {
   trade_log: Trade[];
   open_trade_ids: string[];
   closed_trade_ids: string[];
+  tokens: tokenAccountStats[]
   config: Config;
+}
+export interface tokenAccountStats {
+  win: number;
+  loss: number;
+  pnl: number;
 }
 export interface Trade {
   trade_id: string;
