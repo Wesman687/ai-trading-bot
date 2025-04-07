@@ -1,5 +1,6 @@
 
 
+import traceback
 from robot.trading_env import TradingEnv
 from stable_baselines3 import PPO
 from model.predictor import load_model_for_token, load_threshold_for_token,  load_feature_names_for_token
@@ -44,7 +45,8 @@ def reload_llm_model(token, frame):
         log_reload_event(msg)
 
     except Exception as e:
-        msg = f"❌ Failed to reload {token.upper()} {frame}: {e}"
+        error_details = traceback.format_exc()
+        msg = f"❌ Failed to reload {token.upper()} {frame}:\n{error_details}"
         print(msg)
         log_reload_event(msg)
 
