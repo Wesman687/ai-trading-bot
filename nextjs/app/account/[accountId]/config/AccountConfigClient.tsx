@@ -34,9 +34,8 @@ export default function AccountConfigClient({ accountId }: { accountId: string }
     }, [account, localConfig]);
 
     if (!account || !localConfig) return <div className="p-6">Loading account...</div>;
-
     const handleSave = () => {
-      dispatch(updateAccountConfig(account.account_id, {
+      dispatch(updateAccountConfig(accountId, {
         config: localConfig,
         ...generalFields,
       }));

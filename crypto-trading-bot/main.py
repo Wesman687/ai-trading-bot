@@ -6,7 +6,7 @@ from config import    HORIZONS,  WATCHED_PAIRS
 from data.daily_fetcher import fetch_all_candles
 from trading.momentum import add_live_momentum_features
 import asyncio
-from model.predictor import predict
+from model.predictor import log_prediction_batch, predict
 import platform
 import json
 from config import models, RL_MODELS
@@ -63,11 +63,7 @@ async def main():
     current_prices = {}
     
     async def on_price_update(pair, latest_data, latest_feature, candle_history, symbol, feature_buffer):
-        token = pair.split("/")[0]
-        
-        
-        with open(f"logs/price_history/{pair.replace('/', '_')}.jsonl", "a") as f:
-            f.write(json.dumps(latest_data, default=str) + "\n")
+        token = pair.split("/")[0]        
         
         # RL agent (per token)
         result = evaluate_rl_bot(token, latest_feature, RL_MODELS)
@@ -94,7 +90,7 @@ async def main():
             validate_features(feature_names, features)
             features.update(add_live_momentum_features(feature_buffer[symbol]))
 
-            predictions[frame] = predict(model, features, feature_names, threshold, token)
+            predictions[frame] = predict(model, features, feature_names, threshold, token, frame)
             features_by_horizon[frame] = features
             from utils.send_trader import send_signal_to_trading_server
             
@@ -111,6 +107,22 @@ async def main():
                             f.write(f"{key:<30}: {val}\n")
                     except Exception as e:
                         f.write(f"{key:<30}: ❌ Error printing value ({e})\n")
+                        
+        prediction_entries = [
+            (
+                predictions[frame]["probability"],
+                predictions[frame]["threshold"],
+                predictions[frame]["direction"],
+                frame
+            )
+            for frame in predictions
+        ]
+
+        # Get latest price from incoming data
+        latest_price = latest_data["close"]
+
+        # Log predictions for all frames
+        log_prediction_batch(token, latest_price, prediction_entries)
         try:
             await send_signal_to_trading_server(token, latest_data, features_by_horizon, predictions, result)
         except Exception as e:

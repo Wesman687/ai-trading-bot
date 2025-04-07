@@ -14,6 +14,8 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { API_BASE } from '@/lib/config';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 interface PerformanceStats {
   total_pnl: number;
@@ -59,6 +61,7 @@ export default function PerformanceCharts({ accountId }: { accountId: string }) 
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [preset, setPreset] = useState<string>('');
+  const availableTokens = useSelector((state: RootState) => state.accounts.availableTokens);
 
   useEffect(() => {
     const [presetStart, presetEnd] = getPresetDateRange(preset);
@@ -108,12 +111,12 @@ export default function PerformanceCharts({ accountId }: { accountId: string }) 
           <div>
             <label className="text-sm">Token</label>
             <select
-              className="w-full rounded border px-2 py-1"
+              className="w-full rounded border px-2 py-1 bg-black text-white"
               value={selectedToken}
               onChange={(e) => setSelectedToken(e.target.value)}
             >
               <option value="">All</option>
-              {performance.token_list.map((token) => (
+              {availableTokens.map((token) => (
                 <option key={token} value={token}>{token}</option>
               ))}
             </select>
@@ -121,7 +124,7 @@ export default function PerformanceCharts({ accountId }: { accountId: string }) 
           <div>
             <label className="text-sm">Preset Range</label>
             <select
-              className="w-full rounded border px-2 py-1"
+              className="w-full rounded border px-2 py-1 bg-black text-white"
               value={preset}
               onChange={(e) => setPreset(e.target.value)}
             >

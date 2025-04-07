@@ -2,12 +2,13 @@
 
 
 
+from collections import defaultdict
 import os
 from dotenv import load_dotenv
 
 
 load_dotenv()
-
+last_logged_by_token_frame = defaultdict(lambda: None)
 RL_MODELS = {}  # Store models per token
 
 models = {}

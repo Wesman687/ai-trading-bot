@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import TokenConfigEditor from '@/components/TokenConfigEditor';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { createDefaultConfig } from '@/utils/defaultConfig';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { API_BASE } from '@/lib/config';
+import { selectAllAccounts } from '@/store/selectors/account';
 
 export default function CreateAccountPage() {
   const router = useRouter();
@@ -21,6 +22,16 @@ export default function CreateAccountPage() {
   const tokens = useSelector((state: RootState) => state.accounts.availableTokens);
   const defaultConfig = createDefaultConfig(tokens);
   const [config, setConfig] = useState(() => defaultConfig);
+  const memoizedSelector = useMemo(() => selectAllAccounts, []);
+  const accounts = useSelector(memoizedSelector);
+  const [copyFromId, setCopyFromId] = useState<string | null>(null);
+
+  const handleCopyConfig = (id: string) => {
+    const fromAccount = accounts.find(acc => acc._id === id);
+    if (fromAccount) {
+      setConfig(fromAccount.config);
+    }
+  };
   const handleSubmit = async () => {
     const paylog = {
       name: account.name,
@@ -55,6 +66,26 @@ export default function CreateAccountPage() {
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Create New Trading Account</h1>
+            {/* Optional: Copy config from existing */}
+            <div className="flex flex-col">
+        <label className="text-sm mb-1">Copy Config From</label>
+        <select
+          value={copyFromId ?? ''}
+          onChange={(e) => {
+            const selectedId = e.target.value;
+            setCopyFromId(selectedId);
+            handleCopyConfig(selectedId);
+          }}
+          className="border px-2 py-1 rounded bg-black text-white"
+        >
+          <option value="">-- None --</option>
+          {accounts.map((acc) => (
+            <option key={acc._id} value={acc._id}>
+              {acc.name}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="flex flex-col">
         <label className="text-sm">Starting Balance</label>
         <input
