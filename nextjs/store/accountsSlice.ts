@@ -36,7 +36,7 @@ const accountsSlice = createSlice({
       for (const account of accounts) {
         state.byId[account._id] = account;
         state.allIds.push(account._id);
-        const tokens = Object.keys(account.config || {});
+        const tokens = Object.keys(account.tokens || {});
         tokens.forEach((token) => tokenSet.add(token)); // ✅ Add tokens
       }
       state.availableTokens = Array.from(tokenSet);
