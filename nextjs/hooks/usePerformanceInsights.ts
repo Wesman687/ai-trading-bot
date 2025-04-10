@@ -19,6 +19,7 @@ export function usePerformanceInsights(token: string, field: string) {
       const account = accountsById[accountIdKey];
       const config = account?.config?.[token];
       if (!config) continue;
+      
 
       const strategyRoot = field.includes('.') ? config : config.exit_strategy;
       if (!strategyRoot) continue;
