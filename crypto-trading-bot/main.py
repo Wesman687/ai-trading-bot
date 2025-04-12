@@ -33,8 +33,7 @@ async def boot():
     threading.Thread(target=start_model_reload_watcher, daemon=True).start()
 
     # Start main async app loop
-    await main()
-    
+    await main()   
 
 
         
